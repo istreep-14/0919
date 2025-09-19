@@ -68,7 +68,7 @@ function recomputeDailyForDates(dates) {
     var dateKey = Utilities.formatDate(d, getProjectTimeZone(), 'yyyy-MM-dd');
     if (!set[dateKey]) continue;
     var key = dateKey + '|' + format;
-    if (!buckets[key]) buckets[key] = { wins: 0, losses: 0, draws: 0, score: 0, games: 0, duration: 0, ratings: [] };
+    if (!buckets[key]) buckets[key] = { date: dateKey, format: format, wins: 0, losses: 0, draws: 0, score: 0, games: 0, duration: 0, ratings: [] };
     var b = buckets[key];
     var outcome = row[18];
     var score = row[19];
@@ -148,7 +148,7 @@ function buildDailyRowsWithMain3(buckets) {
       re = Math.max.apply(null, b.ratings);
       rc = Number(re) - Number(rs);
     }
-    rows.push([b.date, b.format, b.wins, b.losses, b.draws, b.score, rs, re, rc, b.games, b.duration, '', '']);
+    rows.push([b.date, b.format, b.wins, b.losses, b.draws, b.score, rs, re, rc, b.games, b.duration]);
     (byDate[b.date] = byDate[b.date] || {})[b.format] = { wins: b.wins, losses: b.losses, draws: b.draws, score: b.score, games: b.games, duration: b.duration, rs: rs, re: re };
   }
   // Add Main3 aggregates
@@ -168,17 +168,21 @@ function buildDailyRowsWithMain3(buckets) {
       var rs = starts.length ? Math.min.apply(null, starts) : '';
       var re = ends.length ? Math.max.apply(null, ends) : '';
       var rc = (rs === '' || re === '') ? '' : (Number(re) - Number(rs));
-      rows.push([date, 'Main3', wins, losses, draws, score, rs, re, rc, games, duration, '', '']);
+      rows.push([date, 'Main3', wins, losses, draws, score, rs, re, rc, games, duration]);
     }
   });
   // Sort by date asc; format order: bullet, blitz, rapid, Main3, others alpha
   var order = { bullet:1, blitz:2, rapid:3, Main3:4 };
   rows.sort(function(a,b){
     if (a[0] !== b[0]) return a[0] < b[0] ? -1 : 1;
-    var fa = a[1], fb = b[1];
-    var oa = order[fa] || 1000 + fa.charCodeAt(0);
-    var ob = order[fb] || 1000 + fb.charCodeAt(0);
-    return oa - ob;
+    var fa = a[1] || '';
+    var fb = b[1] || '';
+    var oa = (order[fa] !== undefined) ? order[fa] : 1000;
+    var ob = (order[fb] !== undefined) ? order[fb] : 1000;
+    if (oa !== ob) return oa - ob;
+    if (fa < fb) return -1;
+    if (fa > fb) return 1;
+    return 0;
   });
   return rows;
 }
