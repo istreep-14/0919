@@ -9,9 +9,7 @@ const CONFIG = {
     DailyActive: 'DailyTotals_Active',
     DailyArchive: 'DailyTotals_Archive',
     CallbackStats: 'CallbackStats',
-    Logs: 'Logs',
-    DeadLetters: 'DeadLetters',
-    Config: 'Config'
+    Logs: 'Logs'
   },
   HEADERS: {
     Archives: [
@@ -35,9 +33,7 @@ const CONFIG = {
     CallbackStats: [
       'url', 'type', 'id', 'exact_rating_change', 'pregame_rating', 'data_json', 'fetched_at'
     ],
-    Logs: ['timestamp', 'level', 'code', 'message', 'context_json'],
-    DeadLetters: ['timestamp', 'stage', 'url', 'error_message', 'context_json'],
-    Config: ['key', 'value']
+    Logs: ['timestamp', 'level', 'code', 'message', 'context_json']
   }
 };
 

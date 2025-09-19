@@ -47,7 +47,6 @@ function fullBackfill() {
       }
       var json = response.json;
       if (json) {
-        saveRawJsonToDrive(year + '-' + month + '.json', json);
         var rows = transformArchiveToRows(username, json);
         var newRows = [];
         for (var j = 0; j < rows.length; j++) {
@@ -131,8 +130,6 @@ function fullBackfill() {
         continue;
       }
       var json = resp.json || {};
-      // Persist raw
-      saveRawJsonToDrive(String(year) + '-' + pad2(parseInt(month,10)) + '.json', json);
       var rows = transformArchiveToRows(username, json);
       var newRows = [];
       for (var r = 0; r < rows.length; r++) {

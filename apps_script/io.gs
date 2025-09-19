@@ -1,30 +1,4 @@
-function getOrCreateProjectFolder() {
-  const props = getScriptProps();
-  const existingId = props.getProperty('PROJECT_FOLDER_ID');
-  if (existingId) {
-    try {
-      return DriveApp.getFolderById(existingId);
-    } catch (e) {}
-  }
-  const root = DriveApp.getRootFolder();
-  const folder = root.createFolder(getProjectRootFolderName());
-  props.setProperty('PROJECT_FOLDER_ID', folder.getId());
-  return folder;
-}
-
-function getOrCreateRawFolder() {
-  const props = getScriptProps();
-  const existingId = props.getProperty('RAW_FOLDER_ID');
-  if (existingId) {
-    try {
-      return DriveApp.getFolderById(existingId);
-    } catch (e) {}
-  }
-  const parent = getOrCreateProjectFolder();
-  const folder = parent.createFolder('raw');
-  props.setProperty('RAW_FOLDER_ID', folder.getId());
-  return folder;
-}
+// Project folder and raw staging removed for simplified standalone script
 
 function getOrCreateSpreadsheet() {
   const props = getScriptProps();
@@ -35,8 +9,6 @@ function getOrCreateSpreadsheet() {
     } catch (e) {}
   }
   const ss = SpreadsheetApp.create(CONFIG.SPREADSHEET_NAME);
-  const file = DriveApp.getFileById(ss.getId());
-  file.moveTo(getOrCreateProjectFolder());
   props.setProperty('SPREADSHEET_ID', ss.getId());
   return ss;
 }
@@ -68,14 +40,5 @@ function writeRowsChunked(sheet, rows, startRow) {
   }
 }
 
-function saveRawJsonToDrive(fileName, obj) {
-  const folder = getOrCreateRawFolder();
-  const existing = folder.getFilesByName(fileName);
-  if (existing.hasNext()) {
-    const file = existing.next();
-    file.setTrashed(true);
-  }
-  const blob = Utilities.newBlob(JSON.stringify(obj), 'application/json', fileName);
-  folder.createFile(blob);
-}
+// Raw JSON staging removed
 
