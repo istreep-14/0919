@@ -33,6 +33,17 @@ function getOrCreateMetricsSpreadsheet() {
 }
 
 function getOrCreateSheet(ss, sheetName, headers) {
+  // Guard against undefined spreadsheet handles from callers
+  if (!ss || typeof ss.getSheetByName !== 'function') {
+    try {
+      ss = SpreadsheetApp.getActive();
+    } catch (e) {}
+    if (!ss) {
+      var metricsNames = CONFIG && CONFIG.SHEET_NAMES ? CONFIG.SHEET_NAMES : {};
+      var isMetricsSheet = (sheetName === metricsNames.Archives || sheetName === metricsNames.DailyTotals || sheetName === metricsNames.DailyActive || sheetName === metricsNames.DailyArchive || sheetName === metricsNames.CallbackStats || sheetName === metricsNames.Logs);
+      ss = isMetricsSheet ? getOrCreateMetricsSpreadsheet() : getOrCreateGamesSpreadsheet();
+    }
+  }
   var sheet = ss.getSheetByName(sheetName);
   if (!sheet) {
     sheet = ss.insertSheet(sheetName);

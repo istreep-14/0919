@@ -153,18 +153,30 @@ function backfillLastRatings() {
   var values = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
   var idxFormat = CONFIG.HEADERS.Games.indexOf('format');
   var idxPost = CONFIG.HEADERS.Games.indexOf('player_rating');
+  var idxEnd = CONFIG.HEADERS.Games.indexOf('end_time');
   var idxLast = CONFIG.HEADERS.Games.indexOf('last_rating');
   var idxDelta = CONFIG.HEADERS.Games.indexOf('rating_change_last');
-  var latestByFormat = {};
-  // Rows are newest-first; traverse bottom-up to compute historical last
-  for (var i = values.length - 1; i >= 0; i--) {
-    var row = values[i];
-    var f = row[idxFormat];
-    var post = row[idxPost];
-    var last = (f && latestByFormat.hasOwnProperty(f)) ? latestByFormat[f] : '';
-    row[idxLast] = (last === '' ? '' : Number(last));
-    row[idxDelta] = (last === '' || post === '' ? '' : Number(post) - Number(last));
-    if (f && post !== '') latestByFormat[f] = Number(post);
+  // Build per-format arrays with end_time for ordering
+  var byFormat = {};
+  for (var i = 0; i < values.length; i++) {
+    var r = values[i];
+    var fmt = r[idxFormat];
+    var endStr = r[idxEnd];
+    if (!fmt || !endStr) continue;
+    (byFormat[fmt] = byFormat[fmt] || []).push({ idx: i, end: new Date(endStr).getTime(), post: r[idxPost] });
   }
+  Object.keys(byFormat).forEach(function(fmt){
+    var arr = byFormat[fmt];
+    arr.sort(function(a,b){ return a.end - b.end; });
+    var lastVal = '';
+    for (var k = 0; k < arr.length; k++) {
+      var entry = arr[k];
+      var row = values[entry.idx];
+      row[idxLast] = (lastVal === '' ? '' : Number(lastVal));
+      var postVal = row[idxPost];
+      row[idxDelta] = (lastVal === '' || postVal === '' ? '' : Number(postVal) - Number(lastVal));
+      if (postVal !== '') lastVal = Number(postVal);
+    }
+  });
   sheet.getRange(2, 1, values.length, sheet.getLastColumn()).setValues(values);
 }
