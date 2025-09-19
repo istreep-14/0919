@@ -161,4 +161,3 @@ function fullBackfill() {
     try { lock.releaseLock(); } catch (e) {}
   }
 }
-
