@@ -63,12 +63,38 @@ function gameJsonToRow(meUsername, game) {
   var ratingChangeExact = '';
   var ratingIsExact = '';
 
+  // Derive end_reason from results
+  var endReason = '';
+  try {
+    var whiteRes = (white && white.result) || '';
+    var blackRes = (black && black.result) || '';
+    // Normalize: if one is win, take the other's code; if draw, take either
+    var drawCodes = { agreed: true, repetition: true, stalemate: true, insufficient: true, '50move': true, timevsinsufficient: true };
+    if (whiteRes === 'win' && blackRes) endReason = blackRes;
+    else if (blackRes === 'win' && whiteRes) endReason = whiteRes;
+    else if (drawCodes[whiteRes]) endReason = whiteRes;
+    else if (drawCodes[blackRes]) endReason = blackRes;
+    else endReason = whiteRes || blackRes || '';
+  } catch (e) {}
+
+  // Extract PGN moves list after headers
+  var pgnMoves = '';
+  try {
+    if (game.pgn) {
+      var parts = game.pgn.split('\n\n');
+      if (parts && parts.length >= 2) {
+        // Everything after the blank line separating headers and movetext
+        pgnMoves = parts.slice(1).join('\n\n').trim();
+      }
+    }
+  } catch (e) {}
+
   return [
     safe(url), safe(type), safe(id), safe(tc), safe(tcParts.base), safe(tcParts.inc), safe(tcParts.corr),
     safe(startLocal), safe(endLocal), safe(duration), safe(game.rated), safe(timeClass), safe(rules), safe(format),
     safe(player.username), safe(meColor), safe(player.rating), safe(player.result), safe(playerOutcome), safe(playerScore),
     safe(opponent.username), safe(oppColor), safe(opponent.rating),
-    safe(ecoCode), safe(ecoUrl), safe(uuid),
+    safe(ecoCode), safe(ecoUrl), safe(uuid), safe(endReason), safe(pgnMoves),
     safe(startUnix || ''), safe(endUnix || ''), '', ''
   ];
 }

@@ -25,3 +25,4 @@ function setupProject() {
 function ingestActiveMonth() { /* implemented in incremental.gs */ }
 function rebuildDailyTotals() { /* implemented in daily.gs */ }
 function runCallbacksBatch() { /* implemented in callbacks.gs */ }
+function fullBackfill() { /* implemented in backfill.gs */ }

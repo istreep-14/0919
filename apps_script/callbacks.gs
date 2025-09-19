@@ -50,13 +50,16 @@ function runCallbacksBatch() {
 }
 
 function buildCallbackUrlIndex(cbSheet) {
-  var last = cbSheet.getLastRow();
   var set = new Set();
-  if (last < 2) return set;
-  var vals = cbSheet.getRange(2, 1, last - 1, 1).getValues();
-  for (var i = 0; i < vals.length; i++) {
-    var u = vals[i][0]; if (u) set.add(u);
-  }
+  try {
+    if (!cbSheet || typeof cbSheet.getLastRow !== 'function') return set;
+    var last = cbSheet.getLastRow();
+    if (last < 2) return set;
+    var vals = cbSheet.getRange(2, 1, last - 1, 1).getValues();
+    for (var i = 0; i < vals.length; i++) {
+      var u = vals[i][0]; if (u) set.add(u);
+    }
+  } catch (e) {}
   return set;
 }
 
@@ -135,40 +138,7 @@ function applyExactChangesToGames(gamesSS, metricsSS, outRows) {
   if (dates.length) recomputeDailyForDates(dates);
 }
 
-function runCallbacksBatch() {
-  var ss = getOrCreateSpreadsheet();
-  var games = getOrCreateSheet(ss, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
-  var callbacks = getOrCreateSheet(ss, CONFIG.SHEET_NAMES.CallbackStats, CONFIG.HEADERS.CallbackStats);
-  var lastRow = games.getLastRow();
-  if (lastRow < 2) return;
-  var values = games.getRange(2, 1, lastRow - 1, games.getLastColumn()).getValues();
-  // Simple queue: take latest N games without callback stats
-  var maxBatch = 50;
-  var toFetch = [];
-  for (var i = values.length - 1; i >= 0 && toFetch.length < maxBatch; i--) {
-    var url = values[i][0];
-    var type = values[i][1];
-    var id = values[i][2];
-    if (!url || !type || !id) continue;
-    if (!hasCallbackRow(callbacks, url)) {
-      toFetch.push({ url: url, type: type, id: id });
-    }
-  }
-  if (!toFetch.length) return;
-  var rows = [];
-  for (var j = 0; j < toFetch.length; j++) {
-    var item = toFetch[j];
-    try {
-      var cb = fetchCallback(item.type, item.id);
-      var exact = deriveExactRatingChange(cb);
-      rows.push([item.url, item.type, item.id, exact.change, exact.pregame, JSON.stringify(cb), new Date()]);
-      // Optionally update Games sheet with exact rating change in a later iteration (schema extension)
-    } catch (e) {
-      logWarn('CB_ERR', e && e.message, { id: item.id });
-    }
-  }
-  if (rows.length) callbacks.getRange(callbacks.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
-}
+// removed duplicate runCallbacksBatch implementation
 
 function hasCallbackRow(callbackSheet, url) {
   var lastRow = callbackSheet.getLastRow();

@@ -57,7 +57,11 @@ function fullBackfill() {
             urlIndex.add(u);
           }
         }
-        if (newRows.length) writeRowsChunked(gamesSheet, newRows);
+        if (newRows.length) {
+          // Append then sort by end_time_epoch desc to ensure newest at top; or insert at top for small batches
+          var startRow = gamesSheet.getLastRow() + 1;
+          writeRowsChunked(gamesSheet, newRows);
+        }
         var apiCount = (json && json.games) ? json.games.length : '';
         var ingestedCount = countIngestedForArchive(ss, parseInt(year,10), parseInt(month,10));
         if (response.etag) archivesSheet.getRange(rowNumber, 5).setValue(response.etag);

@@ -1,10 +1,10 @@
 function logRow(level, code, message, context) {
   try {
-    var ss = getOrCreateSpreadsheet();
-    var sheet = getOrCreateSheet(ss, CONFIG.SHEET_NAMES.Logs, CONFIG.HEADERS.Logs);
+    var metricsSS = getOrCreateMetricsSpreadsheet();
+    var sheet = getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.Logs, CONFIG.HEADERS.Logs);
     var ts = new Date();
     var ctx = context ? JSON.stringify(context) : '';
-    sheet.appendRow([ts, level || 'INFO', code || '', String(message || ''), ctx]);
+    writeRowsChunked(sheet, [[ts, level || 'INFO', code || '', String(message || ''), ctx]]);
   } catch (e) {
     // swallow
   }
