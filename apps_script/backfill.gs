@@ -10,7 +10,22 @@ function fullBackfill() {
     var username = getConfiguredUsername();
     var archivesSheet = getOrCreateSheet(metricsSS2, CONFIG.SHEET_NAMES.Archives, CONFIG.HEADERS.Archives);
     var lastRow = archivesSheet.getLastRow();
-    if (lastRow < 2) return;
+    // If archives are not initialized yet, discover and write them now
+    if (lastRow < 2) {
+      try {
+        var discovered = discoverArchives(username);
+        if (discovered && discovered.length) {
+          writeArchivesSheet(metricsSS2, discovered);
+          lastRow = archivesSheet.getLastRow();
+        }
+      } catch (e) {
+        logError('BACKFILL_INIT_ERR', e && e.message, {});
+      }
+      if (lastRow < 2) {
+        logWarn('BACKFILL_NO_ARCHIVES', 'No archives available; run setupProject() first', {});
+        return;
+      }
+    }
     var data = archivesSheet.getRange(2, 1, lastRow - 1, CONFIG.HEADERS.Archives.length).getValues();
 
     // Build URL index once
