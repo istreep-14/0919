@@ -46,13 +46,13 @@ const CONFIG = {
       'last_rating', 'rating_change_last', 'exact_pregame_rating'
     ],
     DailyTotals: [
-      'date', 'format', 'wins', 'losses', 'draws', 'score', 'rating_start', 'rating_end', 'rating_change', 'games', 'duration_seconds', 'rating_change_exact', 'is_rating_exact'
+      'date', 'format', 'wins', 'losses', 'draws', 'score', 'rating_start', 'rating_end', 'rating_change', 'games', 'duration_seconds'
     ],
     DailyActive: [
-      'date', 'format', 'wins', 'losses', 'draws', 'score', 'rating_start', 'rating_end', 'rating_change', 'games', 'duration_seconds', 'rating_change_exact', 'is_rating_exact'
+      'date', 'format', 'wins', 'losses', 'draws', 'score', 'rating_start', 'rating_end', 'rating_change', 'games', 'duration_seconds'
     ],
     DailyArchive: [
-      'date', 'format', 'wins', 'losses', 'draws', 'score', 'rating_start', 'rating_end', 'rating_change', 'games', 'duration_seconds', 'rating_change_exact', 'is_rating_exact'
+      'date', 'format', 'wins', 'losses', 'draws', 'score', 'rating_start', 'rating_end', 'rating_change', 'games', 'duration_seconds'
     ],
     CallbackStats: [
       'url', 'type', 'id',
