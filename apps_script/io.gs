@@ -5,11 +5,14 @@ function getOrCreateGamesSpreadsheet() {
   const existingId = props.getProperty('SPREADSHEET_ID_GAMES');
   if (existingId) {
     try {
-      return SpreadsheetApp.openById(existingId);
+      var ssExisting = SpreadsheetApp.openById(existingId);
+      ensureFileInProjectFolder(ssExisting.getId());
+      return ssExisting;
     } catch (e) {}
   }
   const ss = SpreadsheetApp.create(getSpreadsheetNameGames());
   props.setProperty('SPREADSHEET_ID_GAMES', ss.getId());
+  ensureFileInProjectFolder(ss.getId());
   return ss;
 }
 
@@ -18,11 +21,14 @@ function getOrCreateMetricsSpreadsheet() {
   const existingId = props.getProperty('SPREADSHEET_ID_METRICS');
   if (existingId) {
     try {
-      return SpreadsheetApp.openById(existingId);
+      var ssExisting = SpreadsheetApp.openById(existingId);
+      ensureFileInProjectFolder(ssExisting.getId());
+      return ssExisting;
     } catch (e) {}
   }
   const ss = SpreadsheetApp.create(getSpreadsheetNameMetrics());
   props.setProperty('SPREADSHEET_ID_METRICS', ss.getId());
+  ensureFileInProjectFolder(ss.getId());
   return ss;
 }
 
@@ -54,3 +60,21 @@ function writeRowsChunked(sheet, rows, startRow) {
 }
 
 // Raw JSON staging removed
+
+function getOrCreateProjectFolder() {
+  var name = getProjectRootFolderName();
+  var it = DriveApp.getFoldersByName(name);
+  if (it.hasNext()) return it.next();
+  return DriveApp.createFolder(name);
+}
+
+function ensureFileInProjectFolder(fileId) {
+  try {
+    var folder = getOrCreateProjectFolder();
+    var file = DriveApp.getFileById(fileId);
+    folder.addFile(file);
+    try {
+      DriveApp.getRootFolder().removeFile(file);
+    } catch (e) {}
+  } catch (e) {}
+}

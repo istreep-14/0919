@@ -42,7 +42,8 @@ const CONFIG = {
       'player_username', 'player_color', 'player_rating', 'player_result', 'player_outcome', 'player_score',
       'opponent_username', 'opponent_color', 'opponent_rating',
       'eco_code', 'eco_url', 'uuid', 'end_reason', 'pgn_moves',
-      'start_time_epoch', 'end_time_epoch', 'rating_change_exact', 'rating_is_exact'
+      'start_time_epoch', 'end_time_epoch', 'rating_change_exact', 'rating_is_exact',
+      'last_rating', 'rating_change_last', 'exact_pregame_rating'
     ],
     DailyTotals: [
       'date', 'format', 'wins', 'losses', 'draws', 'score', 'rating_start', 'rating_end', 'rating_change', 'games', 'duration_seconds', 'rating_change_exact', 'is_rating_exact'
@@ -54,7 +55,14 @@ const CONFIG = {
       'date', 'format', 'wins', 'losses', 'draws', 'score', 'rating_start', 'rating_end', 'rating_change', 'games', 'duration_seconds', 'rating_change_exact', 'is_rating_exact'
     ],
     CallbackStats: [
-      'url', 'type', 'id', 'exact_rating_change', 'pregame_rating', 'data_json', 'fetched_at'
+      'url', 'type', 'id',
+      'my_color', 'my_exact_rating_change', 'my_pregame_rating',
+      'opp_color', 'opp_pregame_rating', 'opp_exact_rating_change',
+      'game_end_reason', 'is_live_game', 'is_rated', 'ply_count',
+      'white_username', 'white_rating', 'white_country', 'white_membership', 'white_default_tab', 'white_post_move_action',
+      'black_username', 'black_rating', 'black_country', 'black_membership', 'black_default_tab', 'black_post_move_action',
+      'eco_code', 'pgn_date', 'pgn_time', 'base_time1', 'time_increment1',
+      'data_json', 'fetched_at'
     ],
     Logs: ['timestamp', 'level', 'code', 'message', 'context_json']
   }

@@ -57,6 +57,35 @@ function ingestActiveMonth() {
 
     if (newRows.length) {
       var gamesSheet = getOrCreateSheet(gamesSS, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
+      // Compute last_rating and rating_change_last for each row (needs format & prior rows)
+      var formatIdx = CONFIG.HEADERS.Games.indexOf('format');
+      var playerRatingIdx = CONFIG.HEADERS.Games.indexOf('player_rating');
+      var lastRatingIdx = CONFIG.HEADERS.Games.indexOf('last_rating');
+      var deltaLastIdx = CONFIG.HEADERS.Games.indexOf('rating_change_last');
+      // Build map of format → latest post rating from existing top rows
+      var existingLastRow = gamesSheet.getLastRow();
+      var existingVals = existingLastRow >= 2 ? gamesSheet.getRange(2, 1, existingLastRow - 1, gamesSheet.getLastColumn()).getValues() : [];
+      var latestPostByFormat = {};
+      for (var ex = 0; ex < existingVals.length; ex++) {
+        var f = existingVals[ex][formatIdx];
+        var r = existingVals[ex][playerRatingIdx];
+        if (f && r !== '' && latestPostByFormat[f] === undefined) {
+          latestPostByFormat[f] = Number(r);
+        }
+      }
+      // Process newRows in reverse (oldest first) to compute last_rating properly
+      for (var k = newRows.length - 1; k >= 0; k--) {
+        var row = newRows[k];
+        var f2 = row[formatIdx];
+        var post = row[playerRatingIdx];
+        var last = (f2 && latestPostByFormat.hasOwnProperty(f2)) ? latestPostByFormat[f2] : '';
+        // Ensure new columns present
+        while (row.length <= lastRatingIdx) row.push('');
+        row[lastRatingIdx] = (last === '' ? '' : Number(last));
+        while (row.length <= deltaLastIdx) row.push('');
+        row[deltaLastIdx] = (last === '' || post === '' ? '' : Number(post) - Number(last));
+        if (f2 && post !== '') latestPostByFormat[f2] = Number(post);
+      }
       // Insert at top (after header) so newest appear first
       var startRow = 2;
       var colCount = newRows[0].length;
