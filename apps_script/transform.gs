@@ -91,4 +91,3 @@ function transformArchiveToRows(meUsername, archiveJson) {
   }
   return rows;
 }
-
