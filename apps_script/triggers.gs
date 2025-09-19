@@ -32,4 +32,3 @@ function healthCheck() {
     logError('HEALTH_ERR', e && e.message, {});
   }
 }
-
