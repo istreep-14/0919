@@ -39,7 +39,10 @@ function rebuildDailyTotals() {
   }
 
   var out = buildDailyRowsWithMain3(buckets);
-  if (out.length) writeRowsChunked(daily, out);
+  if (out.length) {
+    writeRowsChunked(daily, out);
+    applyDailyTotalsDefaultView(daily);
+  }
 }
 
 function recomputeDailyForDates(dates) {
@@ -90,7 +93,10 @@ function recomputeDailyForDates(dates) {
     if (keep.length) daily.getRange(2, 1, keep.length, keep[0].length).setValues(keep);
   }
   var out = buildDailyRowsWithMain3(buckets);
-  if (out.length) writeRowsChunked(daily, out);
+  if (out.length) {
+    writeRowsChunked(daily, out);
+    applyDailyTotalsDefaultView(daily);
+  }
 }
 
 function buildDailyTotalsInitial() {
@@ -123,7 +129,10 @@ function buildDailyTotalsInitial() {
     map.set(key, rec);
   }
   var out = buildDailyRowsWithMain3FromMap(map);
-  if (out.length) writeRowsChunked(daily, out, 2);
+  if (out.length) {
+    writeRowsChunked(daily, out, 2);
+    applyDailyTotalsDefaultView(daily);
+  }
 }
 
 // remove duplicate legacy recomputeDailyForDates implementation
@@ -193,4 +202,27 @@ function buildDailyRowsWithMain3FromMap(map) {
     if (rec.rating_end !== '') buckets[key].ratings.push(Number(rec.rating_end));
   });
   return buildDailyRowsWithMain3(buckets);
+}
+
+function applyDailyTotalsDefaultView(sheet) {
+  try {
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 2) return;
+    var formatCol = CONFIG.HEADERS.DailyTotals.indexOf('format') + 1; // 2
+    var dataRange = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn());
+    var values = dataRange.getValues();
+    var hideRows = [];
+    for (var i = 0; i < values.length; i++) {
+      var fmt = values[i][formatCol - 1];
+      if (fmt && fmt !== 'bullet' && fmt !== 'blitz' && fmt !== 'rapid' && fmt !== 'Main3') {
+        hideRows.push(2 + i);
+      }
+    }
+    // First unhide all for safety
+    sheet.showRows(2, Math.max(0, lastRow - 1));
+    // Then hide non-main formats by default
+    for (var j = 0; j < hideRows.length; j++) {
+      try { sheet.hideRows(hideRows[j]); } catch (e) {}
+    }
+  } catch (e) {}
 }

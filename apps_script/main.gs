@@ -26,6 +26,8 @@ function ingestActiveMonth() { /* implemented in incremental.gs */ }
 function rebuildDailyTotals() { /* implemented in daily.gs */ }
 function runCallbacksBatch() { /* implemented in callbacks.gs */ }
 function fullBackfill() { /* implemented in backfill.gs */ }
+function backfillLastRatings() { /* implemented in incremental.gs */ }
+function recheckInactiveArchives() { /* implemented in rollover.gs */ }
 
 // Enrichment jobs (stubs) — external per-game processors
 function runOpeningAnalysisBatch() { /* implemented in enrichment_openings.gs */ }

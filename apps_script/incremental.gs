@@ -144,3 +144,27 @@ function countIngestedForArchive(ss, year, month) {
   }
   return count;
 }
+
+function backfillLastRatings() {
+  var gamesSS = getOrCreateGamesSpreadsheet();
+  var sheet = getOrCreateSheet(gamesSS, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return;
+  var values = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
+  var idxFormat = CONFIG.HEADERS.Games.indexOf('format');
+  var idxPost = CONFIG.HEADERS.Games.indexOf('player_rating');
+  var idxLast = CONFIG.HEADERS.Games.indexOf('last_rating');
+  var idxDelta = CONFIG.HEADERS.Games.indexOf('rating_change_last');
+  var latestByFormat = {};
+  // Rows are newest-first; traverse bottom-up to compute historical last
+  for (var i = values.length - 1; i >= 0; i--) {
+    var row = values[i];
+    var f = row[idxFormat];
+    var post = row[idxPost];
+    var last = (f && latestByFormat.hasOwnProperty(f)) ? latestByFormat[f] : '';
+    row[idxLast] = (last === '' ? '' : Number(last));
+    row[idxDelta] = (last === '' || post === '' ? '' : Number(post) - Number(last));
+    if (f && post !== '') latestByFormat[f] = Number(post);
+  }
+  sheet.getRange(2, 1, values.length, sheet.getLastColumn()).setValues(values);
+}
