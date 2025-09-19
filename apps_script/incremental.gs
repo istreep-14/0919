@@ -2,6 +2,8 @@ function ingestActiveMonth() {
   var lock = LockService.getScriptLock();
   lock.tryLock(30000);
   try {
+    // Ensure month rollover without hitting archives-list API
+    ensureMonthRollover();
     var ss = getOrCreateSpreadsheet();
     var username = getConfiguredUsername();
     var archivesSheet = getOrCreateSheet(ss, CONFIG.SHEET_NAMES.Archives, CONFIG.HEADERS.Archives);
