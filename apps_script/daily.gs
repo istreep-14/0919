@@ -214,4 +214,3 @@ function recomputeDailyForDates(dates) {
   if (keep.length) dailyActive.getRange(2, 1, keep.length, keep[0].length).setValues(keep);
   if (out.length) writeRowsChunked(dailyActive, out);
 }
-
