@@ -99,7 +99,6 @@ function fullBackfill() {
     var metricsSS2 = getOrCreateMetricsSpreadsheet();
     var username = getConfiguredUsername();
     var archivesSheet = getOrCreateSheet(metricsSS2, CONFIG.SHEET_NAMES.Archives, CONFIG.HEADERS.Archives);
-    var rawFolder = getOrCreateRawFolder();
     var lastRow = archivesSheet.getLastRow();
     if (lastRow < 2) return;
     var data = archivesSheet.getRange(2, 1, lastRow - 1, CONFIG.HEADERS.Archives.length).getValues();
