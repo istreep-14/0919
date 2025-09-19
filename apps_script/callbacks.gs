@@ -1,7 +1,8 @@
 function runCallbacksBatch() {
-  var ss = getOrCreateSpreadsheet();
-  var games = getOrCreateSheet(ss, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
-  var cb = getOrCreateSheet(ss, CONFIG.SHEET_NAMES.CallbackStats, CONFIG.HEADERS.CallbackStats);
+  var gamesSS = getOrCreateGamesSpreadsheet();
+  var metricsSS = getOrCreateMetricsSpreadsheet();
+  var games = getOrCreateSheet(gamesSS, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
+  var cb = getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.CallbackStats, CONFIG.HEADERS.CallbackStats);
   var lastRow = games.getLastRow();
   if (lastRow < 2) return;
   var values = games.getRange(2, 1, lastRow - 1, games.getLastColumn()).getValues();
@@ -45,7 +46,7 @@ function runCallbacksBatch() {
   if (outRows.length) writeRowsChunked(cb, outRows);
 
   // Update exact rating change in Games and propagate to daily totals
-  if (outRows.length) applyExactChangesToGames(ss, outRows);
+  if (outRows.length) applyExactChangesToGames(gamesSS, metricsSS, outRows);
 }
 
 function buildCallbackUrlIndex(cbSheet) {
@@ -90,8 +91,8 @@ function extractPregameRating(json, b) {
   } catch (e) { return ''; }
 }
 
-function applyExactChangesToGames(ss, outRows) {
-  var games = getOrCreateSheet(ss, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
+function applyExactChangesToGames(gamesSS, metricsSS, outRows) {
+  var games = getOrCreateSheet(gamesSS, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
   var lastRow = games.getLastRow();
   if (lastRow < 2) return;
   var urls = games.getRange(2, 1, lastRow - 1, games.getLastColumn()).getValues();

@@ -2,9 +2,10 @@ function fullBackfill() {
   var lock = LockService.getScriptLock();
   lock.tryLock(30000);
   try {
-    var ss = getOrCreateSpreadsheet();
+    var gamesSS = getOrCreateGamesSpreadsheet();
+    var metricsSS = getOrCreateMetricsSpreadsheet();
     var username = getConfiguredUsername();
-    var archivesSheet = getOrCreateSheet(ss, CONFIG.SHEET_NAMES.Archives, CONFIG.HEADERS.Archives);
+    var archivesSheet = getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.Archives, CONFIG.HEADERS.Archives);
     var lastRow = archivesSheet.getLastRow();
     if (lastRow < 2) return;
     var data = archivesSheet.getRange(2, 1, lastRow - 1, CONFIG.HEADERS.Archives.length).getValues();
@@ -16,7 +17,7 @@ function fullBackfill() {
       return ka < kb ? -1 : (ka > kb ? 1 : 0);
     });
 
-    var gamesSheet = getOrCreateSheet(ss, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
+    var gamesSheet = getOrCreateSheet(gamesSS, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
     var urlIndex = buildExistingUrlIndex(ss);
 
     var props = getScriptProps();
@@ -94,16 +95,17 @@ function fullBackfill() {
   lock.tryLock(30000);
   try {
     var start = Date.now();
-    var ss = getOrCreateSpreadsheet();
+    var gamesSS2 = getOrCreateGamesSpreadsheet();
+    var metricsSS2 = getOrCreateMetricsSpreadsheet();
     var username = getConfiguredUsername();
-    var archivesSheet = getOrCreateSheet(ss, CONFIG.SHEET_NAMES.Archives, CONFIG.HEADERS.Archives);
+    var archivesSheet = getOrCreateSheet(metricsSS2, CONFIG.SHEET_NAMES.Archives, CONFIG.HEADERS.Archives);
     var rawFolder = getOrCreateRawFolder();
     var lastRow = archivesSheet.getLastRow();
     if (lastRow < 2) return;
     var data = archivesSheet.getRange(2, 1, lastRow - 1, CONFIG.HEADERS.Archives.length).getValues();
 
     // Build URL index once
-    var urlIndex = buildExistingUrlIndex(ss);
+    var urlIndex = buildExistingUrlIndex(gamesSS2);
 
     for (var i = 0; i < data.length; i++) {
       // Time budget guard (~5.5 min)
@@ -140,11 +142,11 @@ function fullBackfill() {
         }
       }
       if (newRows.length) {
-        var gamesSheet = getOrCreateSheet(ss, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
+        var gamesSheet = getOrCreateSheet(gamesSS2, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
         writeRowsChunked(gamesSheet, newRows);
       }
       var apiCount = (json && json.games) ? json.games.length : '';
-      var ingestedCount = countIngestedForArchive(ss, parseInt(year,10), parseInt(month,10));
+      var ingestedCount = countIngestedForArchive(gamesSS2, parseInt(year,10), parseInt(month,10));
       if (resp.etag) archivesSheet.getRange(2 + i, 5).setValue(resp.etag);
       if (resp.lastModified) archivesSheet.getRange(2 + i, 6).setValue(resp.lastModified);
       archivesSheet.getRange(2 + i, 7).setValue(now);

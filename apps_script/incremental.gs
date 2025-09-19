@@ -4,9 +4,10 @@ function ingestActiveMonth() {
   try {
     // Ensure month rollover without hitting archives-list API
     ensureMonthRollover();
-    var ss = getOrCreateSpreadsheet();
+    var gamesSS = getOrCreateGamesSpreadsheet();
+    var metricsSS = getOrCreateMetricsSpreadsheet();
     var username = getConfiguredUsername();
-    var archivesSheet = getOrCreateSheet(ss, CONFIG.SHEET_NAMES.Archives, CONFIG.HEADERS.Archives);
+    var archivesSheet = getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.Archives, CONFIG.HEADERS.Archives);
 
     var lastRow = archivesSheet.getLastRow();
     if (lastRow < 2) return;
@@ -56,7 +57,7 @@ function ingestActiveMonth() {
     newRows.reverse();
 
     if (newRows.length) {
-      var gamesSheet = getOrCreateSheet(ss, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
+      var gamesSheet = getOrCreateSheet(gamesSS, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
       writeRowsChunked(gamesSheet, newRows);
     }
 
@@ -81,8 +82,8 @@ function ingestActiveMonth() {
   }
 }
 
-function buildExistingUrlIndex(ss) {
-  var sheet = getOrCreateSheet(ss, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
+function buildExistingUrlIndex(gamesSS) {
+  var sheet = getOrCreateSheet(gamesSS, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
   var lastRow = sheet.getLastRow();
   var index = new Set();
   if (lastRow < 2) return index;

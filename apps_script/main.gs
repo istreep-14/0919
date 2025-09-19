@@ -1,20 +1,21 @@
 function setupProject() {
-  const ss = getOrCreateSpreadsheet();
-  // Ensure sheets and headers exist
-  getOrCreateSheet(ss, CONFIG.SHEET_NAMES.Archives, CONFIG.HEADERS.Archives);
-  getOrCreateSheet(ss, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
-  getOrCreateSheet(ss, CONFIG.SHEET_NAMES.DailyActive, CONFIG.HEADERS.DailyActive);
-  getOrCreateSheet(ss, CONFIG.SHEET_NAMES.DailyArchive, CONFIG.HEADERS.DailyArchive);
-  getOrCreateSheet(ss, CONFIG.SHEET_NAMES.CallbackStats, CONFIG.HEADERS.CallbackStats);
-  getOrCreateSheet(ss, CONFIG.SHEET_NAMES.Logs, CONFIG.HEADERS.Logs);
-  // DeadLetters and Config sheets removed for simplified standalone script
+  const gamesSS = getOrCreateGamesSpreadsheet();
+  const metricsSS = getOrCreateMetricsSpreadsheet();
+  // Ensure sheets and headers exist in the proper files
+  getOrCreateSheet(gamesSS, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
+
+  getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.Archives, CONFIG.HEADERS.Archives);
+  getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.DailyActive, CONFIG.HEADERS.DailyActive);
+  getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.DailyArchive, CONFIG.HEADERS.DailyArchive);
+  getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.CallbackStats, CONFIG.HEADERS.CallbackStats);
+  getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.Logs, CONFIG.HEADERS.Logs);
 
   // Discover archives and write
   const username = getConfiguredUsername();
   const rows = discoverArchives(username);
-  writeArchivesSheet(ss, rows);
+  writeArchivesSheet(metricsSS, rows);
 
-  return ss.getUrl();
+  return JSON.stringify({ gamesUrl: gamesSS.getUrl(), metricsUrl: metricsSS.getUrl() });
 }
 
 // Backfill implemented in backfill.gs

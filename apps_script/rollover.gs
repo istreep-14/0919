@@ -1,6 +1,6 @@
 function ensureMonthRollover() {
-  var ss = getOrCreateSpreadsheet();
-  var archivesSheet = getOrCreateSheet(ss, CONFIG.SHEET_NAMES.Archives, CONFIG.HEADERS.Archives);
+  var metricsSS = getOrCreateMetricsSpreadsheet();
+  var archivesSheet = getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.Archives, CONFIG.HEADERS.Archives);
   var lastRow = archivesSheet.getLastRow();
   if (lastRow < 2) return; // nothing yet
   var values = archivesSheet.getRange(2, 1, lastRow - 1, CONFIG.HEADERS.Archives.length).getValues();
@@ -26,7 +26,7 @@ function ensureMonthRollover() {
   }
 
   // We are in a new month. Finalize previous active month.
-  finalizePreviousActiveMonth(ss, values, active);
+  finalizePreviousActiveMonth(values, active);
 
   // Create and activate the new month row (if not existing)
   var exists = values.some(function(r){ return parseInt(r[0],10) === yNow && parseInt(r[1],10) === mNow; });
@@ -49,8 +49,10 @@ function buildArchiveUrl(username, year, month) {
   return 'https://api.chess.com/pub/player/' + encodeURIComponent(username) + '/games/' + String(year) + '/' + pad2(month);
 }
 
-function finalizePreviousActiveMonth(ss, allRows, activeRow) {
-  var archivesSheet = getOrCreateSheet(ss, CONFIG.SHEET_NAMES.Archives, CONFIG.HEADERS.Archives);
+function finalizePreviousActiveMonth(allRows, activeRow) {
+  var metricsSS = getOrCreateMetricsSpreadsheet();
+  var gamesSS = getOrCreateGamesSpreadsheet();
+  var archivesSheet = getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.Archives, CONFIG.HEADERS.Archives);
   var username = getConfiguredUsername();
   var now = new Date();
   var idx = allRows.indexOf(activeRow);
@@ -65,18 +67,18 @@ function finalizePreviousActiveMonth(ss, allRows, activeRow) {
   if (response.status === 'ok') {
     var json = response.json;
     var rows = transformArchiveToRows(username, json);
-    var urlIndex = buildExistingUrlIndex(ss);
+    var urlIndex = buildExistingUrlIndex(gamesSS);
     var newRows = [];
     for (var i = 0; i < rows.length; i++) {
       var u = rows[i][0];
       if (u && !urlIndex.has(u)) newRows.push(rows[i]);
     }
     if (newRows.length) {
-      var gamesSheet = getOrCreateSheet(ss, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
+      var gamesSheet = getOrCreateSheet(gamesSS, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
       writeRowsChunked(gamesSheet, newRows);
     }
     var apiCount = (json && json.games) ? json.games.length : '';
-    var ingestedCount = countIngestedForArchive(ss, year, month);
+    var ingestedCount = countIngestedForArchive(gamesSS, year, month);
     if (response.etag) archivesSheet.getRange(rowNumber, 5).setValue(response.etag);
     if (response.lastModified) archivesSheet.getRange(rowNumber, 6).setValue(response.lastModified);
     archivesSheet.getRange(rowNumber, 7).setValue(now);
@@ -89,15 +91,16 @@ function finalizePreviousActiveMonth(ss, allRows, activeRow) {
   }
 
   // Move DailyTotals_Active rows for that month to archive and clear
-  moveDailyTotalsForMonth(ss, year, month);
+  moveDailyTotalsForMonth(year, month);
 
   // Mark month inactive
   archivesSheet.getRange(rowNumber, 4).setValue('inactive');
 }
 
-function moveDailyTotalsForMonth(ss, year, month) {
-  var active = getOrCreateSheet(ss, CONFIG.SHEET_NAMES.DailyActive, CONFIG.HEADERS.DailyActive);
-  var archive = getOrCreateSheet(ss, CONFIG.SHEET_NAMES.DailyArchive, CONFIG.HEADERS.DailyArchive);
+function moveDailyTotalsForMonth(year, month) {
+  var metricsSS = getOrCreateMetricsSpreadsheet();
+  var active = getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.DailyActive, CONFIG.HEADERS.DailyActive);
+  var archive = getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.DailyArchive, CONFIG.HEADERS.DailyArchive);
   var lastRow = active.getLastRow();
   if (lastRow < 2) return;
   var rows = active.getRange(2, 1, lastRow - 1, CONFIG.HEADERS.DailyActive.length).getValues();

@@ -1,15 +1,28 @@
 // Project folder and raw staging removed for simplified standalone script
 
-function getOrCreateSpreadsheet() {
+function getOrCreateGamesSpreadsheet() {
   const props = getScriptProps();
-  const existingId = props.getProperty('SPREADSHEET_ID');
+  const existingId = props.getProperty('SPREADSHEET_ID_GAMES');
   if (existingId) {
     try {
       return SpreadsheetApp.openById(existingId);
     } catch (e) {}
   }
-  const ss = SpreadsheetApp.create(CONFIG.SPREADSHEET_NAME);
-  props.setProperty('SPREADSHEET_ID', ss.getId());
+  const ss = SpreadsheetApp.create((CONFIG.SPREADSHEET_NAME || 'Chess Ingest') + ' - Data-Games');
+  props.setProperty('SPREADSHEET_ID_GAMES', ss.getId());
+  return ss;
+}
+
+function getOrCreateMetricsSpreadsheet() {
+  const props = getScriptProps();
+  const existingId = props.getProperty('SPREADSHEET_ID_METRICS');
+  if (existingId) {
+    try {
+      return SpreadsheetApp.openById(existingId);
+    } catch (e) {}
+  }
+  const ss = SpreadsheetApp.create((CONFIG.SPREADSHEET_NAME || 'Chess Ingest') + ' - Metrics');
+  props.setProperty('SPREADSHEET_ID_METRICS', ss.getId());
   return ss;
 }
 

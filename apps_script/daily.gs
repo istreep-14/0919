@@ -1,8 +1,9 @@
 function rebuildDailyTotals() {
-  var ss = getOrCreateSpreadsheet();
-  var games = getOrCreateSheet(ss, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
-  var active = getOrCreateSheet(ss, CONFIG.SHEET_NAMES.DailyActive, CONFIG.HEADERS.DailyActive);
-  var archive = getOrCreateSheet(ss, CONFIG.SHEET_NAMES.DailyArchive, CONFIG.HEADERS.DailyArchive);
+  var gamesSS = getOrCreateGamesSpreadsheet();
+  var metricsSS = getOrCreateMetricsSpreadsheet();
+  var games = getOrCreateSheet(gamesSS, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
+  var active = getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.DailyActive, CONFIG.HEADERS.DailyActive);
+  var archive = getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.DailyArchive, CONFIG.HEADERS.DailyArchive);
 
   // Clear existing
   if (archive.getLastRow() > 1) archive.getRange(2, 1, archive.getLastRow() - 1, archive.getLastColumn()).clearContent();
@@ -66,9 +67,10 @@ function rebuildDailyTotals() {
 
 function recomputeDailyForDates(dates) {
   if (!dates || !dates.length) return;
-  var ss = getOrCreateSpreadsheet();
-  var games = getOrCreateSheet(ss, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
-  var active = getOrCreateSheet(ss, CONFIG.SHEET_NAMES.DailyActive, CONFIG.HEADERS.DailyActive);
+  var gamesSS = getOrCreateGamesSpreadsheet();
+  var metricsSS = getOrCreateMetricsSpreadsheet();
+  var games = getOrCreateSheet(gamesSS, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
+  var active = getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.DailyActive, CONFIG.HEADERS.DailyActive);
 
   var lastRow = games.getLastRow();
   if (lastRow < 2) return;
