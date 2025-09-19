@@ -48,4 +48,3 @@ function writeArchivesSheet(ss, rows) {
   }
   writeRowsChunked(sheet, rows, 2);
 }
-
