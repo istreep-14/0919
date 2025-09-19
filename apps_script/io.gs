@@ -8,7 +8,7 @@ function getOrCreateGamesSpreadsheet() {
       return SpreadsheetApp.openById(existingId);
     } catch (e) {}
   }
-  const ss = SpreadsheetApp.create((CONFIG.SPREADSHEET_NAME || 'Chess Ingest') + ' - Data-Games');
+  const ss = SpreadsheetApp.create(getSpreadsheetNameGames());
   props.setProperty('SPREADSHEET_ID_GAMES', ss.getId());
   return ss;
 }
@@ -21,7 +21,7 @@ function getOrCreateMetricsSpreadsheet() {
       return SpreadsheetApp.openById(existingId);
     } catch (e) {}
   }
-  const ss = SpreadsheetApp.create((CONFIG.SPREADSHEET_NAME || 'Chess Ingest') + ' - Metrics');
+  const ss = SpreadsheetApp.create(getSpreadsheetNameMetrics());
   props.setProperty('SPREADSHEET_ID_METRICS', ss.getId());
   return ss;
 }

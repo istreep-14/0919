@@ -1,4 +1,5 @@
 function setupProject() {
+  applySetupFromCode();
   const gamesSS = getOrCreateGamesSpreadsheet();
   const metricsSS = getOrCreateMetricsSpreadsheet();
   // Ensure sheets and headers exist in the proper files

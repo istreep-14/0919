@@ -1,3 +1,22 @@
+// SETUP: Fill these values, run setupProject(), then set DONE to true.
+// Where to input: edit the values below directly in this file.
+const SETUP = {
+  DONE: false, // set to true after setup is applied successfully
+  CHESS_USERNAME: 'your_username_here',
+  TIMEZONE: 'America/New_York', // optional; leave empty to use project timezone
+  SPREADSHEET_NAME_GAMES: 'Chess Data - Games',
+  SPREADSHEET_NAME_METRICS: 'Chess Data - Metrics'
+};
+
+function applySetupFromCode() {
+  if (!SETUP || SETUP.DONE !== false) return;
+  const props = PropertiesService.getScriptProperties();
+  if (SETUP.CHESS_USERNAME) props.setProperty('CHESS_USERNAME', SETUP.CHESS_USERNAME);
+  if (SETUP.TIMEZONE) props.setProperty('TIMEZONE', SETUP.TIMEZONE);
+  if (SETUP.SPREADSHEET_NAME_GAMES) props.setProperty('SPREADSHEET_NAME_GAMES', SETUP.SPREADSHEET_NAME_GAMES);
+  if (SETUP.SPREADSHEET_NAME_METRICS) props.setProperty('SPREADSHEET_NAME_METRICS', SETUP.SPREADSHEET_NAME_METRICS);
+}
+
 const CONFIG = {
   PROJECT_NAME: 'Chess Ingest',
   FOLDER_NAME: 'Chess Ingest',
@@ -57,5 +76,23 @@ function getProjectTimeZone() {
 function getProjectRootFolderName() {
   const overrideName = getScriptProps().getProperty('PROJECT_FOLDER_NAME');
   return overrideName || CONFIG.FOLDER_NAME;
+}
+
+function getSpreadsheetNameGames() {
+  const props = getScriptProps();
+  return props.getProperty('SPREADSHEET_NAME_GAMES') || (CONFIG.SPREADSHEET_NAME + ' - Data-Games');
+}
+
+function getSpreadsheetNameMetrics() {
+  const props = getScriptProps();
+  return props.getProperty('SPREADSHEET_NAME_METRICS') || (CONFIG.SPREADSHEET_NAME + ' - Metrics');
+}
+
+function setProjectProperties(obj) {
+  const props = getScriptProps();
+  Object.keys(obj || {}).forEach(function(k){
+    if (obj[k] === undefined || obj[k] === null) return;
+    props.setProperty(String(k), String(obj[k]));
+  });
 }
 
