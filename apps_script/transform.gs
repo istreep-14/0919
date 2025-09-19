@@ -14,6 +14,18 @@ function gameJsonToRow(meUsername, game) {
   var startUnix = game.start_time || null;
   // PGN UTCDate/UTCTime fallback could be added here if needed later
   var endUnix = game.end_time || null;
+  if (!startUnix && game.pgn) {
+    var utcDate = extractPgnHeader(game.pgn, 'UTCDate');
+    var utcTime = extractPgnHeader(game.pgn, 'UTCTime');
+    if (utcDate && utcTime) {
+      try {
+        var parts = utcDate.split('.');
+        var tparts = utcTime.split(':');
+        var d = new Date(Date.UTC(parseInt(parts[0],10), parseInt(parts[1],10)-1, parseInt(parts[2],10), parseInt(tparts[0],10), parseInt(tparts[1],10), parseInt(tparts[2],10)));
+        startUnix = Math.floor(d.getTime() / 1000);
+      } catch (e) {}
+    }
+  }
   var startLocal = startUnix ? toLocalDateTimeStringFromUnixSeconds(startUnix) : '';
   var endLocal = endUnix ? toLocalDateTimeStringFromUnixSeconds(endUnix) : '';
   var duration = (startUnix && endUnix) ? computeDurationSeconds(startUnix, endUnix) : '';
@@ -48,13 +60,16 @@ function gameJsonToRow(meUsername, game) {
   }
 
   var uuid = game.uuid || '';
+  var ratingChangeExact = '';
+  var ratingIsExact = '';
 
   return [
     safe(url), safe(type), safe(id), safe(tc), safe(tcParts.base), safe(tcParts.inc), safe(tcParts.corr),
     safe(startLocal), safe(endLocal), safe(duration), safe(game.rated), safe(timeClass), safe(rules), safe(format),
     safe(player.username), safe(meColor), safe(player.rating), safe(player.result), safe(playerOutcome), safe(playerScore),
     safe(opponent.username), safe(oppColor), safe(opponent.rating),
-    safe(ecoCode), safe(ecoUrl), safe(uuid)
+    safe(ecoCode), safe(ecoUrl), safe(uuid),
+    safe(startUnix || ''), safe(endUnix || ''), '', ''
   ];
 }
 

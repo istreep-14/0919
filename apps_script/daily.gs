@@ -56,7 +56,7 @@ function rebuildDailyTotals() {
     }
     var parts = b.date.split('-');
     var y = parseInt(parts[0],10); var m = parseInt(parts[1],10);
-    var outRow = [b.date, b.format, b.wins, b.losses, b.draws, b.score, rs, re, rc, b.games, b.duration];
+    var outRow = [b.date, b.format, b.wins, b.losses, b.draws, b.score, rs, re, rc, b.games, b.duration, '', ''];
     if (y === yNow && m === mNow) rowsActive.push(outRow); else rowsArchive.push(outRow);
   }
 
@@ -121,7 +121,7 @@ function recomputeDailyForDates(dates) {
       re = Math.max.apply(null, b.ratings);
       rc = Number(re) - Number(rs);
     }
-    out.push([date, format, b.wins, b.losses, b.draws, b.score, rs, re, rc, b.games, b.duration]);
+    out.push([date, format, b.wins, b.losses, b.draws, b.score, rs, re, rc, b.games, b.duration, '', '']);
   }
   if (out.length) writeRowsChunked(active, out);
 }

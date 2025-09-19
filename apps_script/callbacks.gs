@@ -44,7 +44,7 @@ function runCallbacksBatch() {
   }
   if (outRows.length) writeRowsChunked(cb, outRows);
 
-  // Optionally, update exact rating change in Games where available
+  // Update exact rating change in Games and propagate to daily totals
   if (outRows.length) applyExactChangesToGames(ss, outRows);
 }
 
@@ -94,19 +94,44 @@ function applyExactChangesToGames(ss, outRows) {
   var games = getOrCreateSheet(ss, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
   var lastRow = games.getLastRow();
   if (lastRow < 2) return;
-  var urls = games.getRange(2, 1, lastRow - 1, 1).getValues();
-  var mapUrlToRow = {};
-  for (var i = 0; i < urls.length; i++) mapUrlToRow[urls[i][0]] = 2 + i;
+  var urls = games.getRange(2, 1, lastRow - 1, games.getLastColumn()).getValues();
+  var urlIdx = {};
+  for (var i = 0; i < urls.length; i++) {
+    var u = urls[i][0];
+    if (u) urlIdx[u] = { rowNum: 2 + i, rowVals: urls[i] };
+  }
+  var idxPlayerColor = CONFIG.HEADERS.Games.indexOf('player_color');
+  var idxEndTime = CONFIG.HEADERS.Games.indexOf('end_time');
+  var idxExact = CONFIG.HEADERS.Games.indexOf('rating_change_exact');
+  var idxExactFlag = CONFIG.HEADERS.Games.indexOf('rating_is_exact');
+
+  var dateSet = {};
   for (var j = 0; j < outRows.length; j++) {
     var url = outRows[j][0];
-    var exact = outRows[j][3];
-    if (!url || exact === '' || exact === null || exact === undefined) continue;
-    var rnum = mapUrlToRow[url];
-    if (rnum) {
-      // For simplicity, write exact change to Logs or extend schema later if needed
-      // Placeholder: no schema column allocated in Games for exact flag; leaving as enrichment-only for now
+    var rawJson = outRows[j][5];
+    if (!url || !rawJson) continue;
+    var entry = urlIdx[url];
+    if (!entry) continue;
+    var playerColor = entry.rowVals[idxPlayerColor];
+    var exactForPlayer = '';
+    try {
+      var obj = JSON.parse(rawJson);
+      if (obj && obj.game) {
+        if (playerColor === 'white') exactForPlayer = (obj.game.ratingChangeWhite !== undefined) ? obj.game.ratingChangeWhite : obj.game.ratingChange;
+        else if (playerColor === 'black') exactForPlayer = (obj.game.ratingChangeBlack !== undefined) ? obj.game.ratingChangeBlack : (obj.game.ratingChange ? -obj.game.ratingChange : '');
+      }
+    } catch (e) {}
+    if (exactForPlayer === '' || exactForPlayer === null || exactForPlayer === undefined) continue;
+    games.getRange(entry.rowNum, idxExact + 1).setValue(Number(exactForPlayer));
+    games.getRange(entry.rowNum, idxExactFlag + 1).setValue(true);
+    var d = entry.rowVals[idxEndTime];
+    if (d) {
+      var dateKey = Utilities.formatDate(new Date(d), getProjectTimeZone(), 'yyyy-MM-dd');
+      dateSet[dateKey] = true;
     }
   }
+  var dates = Object.keys(dateSet);
+  if (dates.length) recomputeDailyForDates(dates);
 }
 
 function runCallbacksBatch() {

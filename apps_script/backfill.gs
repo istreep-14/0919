@@ -19,15 +19,22 @@ function fullBackfill() {
     var gamesSheet = getOrCreateSheet(ss, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
     var urlIndex = buildExistingUrlIndex(ss);
 
-    for (var i = 0; i < data.length; i++) {
-      var row = data[i];
-      var year = row[0];
-      var month = row[1];
-      var url = row[2];
-      var etag = row[4];
-      var response = fetchJsonWithEtag(url, etag);
+    var props = getScriptProps();
+    var cursor = props.getProperty('BACKFILL_CURSOR');
+    var startIndex = cursor ? parseInt(cursor, 10) : 0;
+    var startTime = new Date().getTime();
+    var batchSize = 8;
+    for (var i = startIndex; i < data.length; i += batchSize) {
+      var slice = data.slice(i, Math.min(i + batchSize, data.length));
+      for (var s = 0; s < slice.length; s++) {
+        var row = slice[s];
+        var year = row[0];
+        var month = row[1];
+        var url = row[2];
+        var etag = row[4];
+        var response = fetchJsonWithEtag(url, etag);
       var now = new Date();
-      var rowNumber = findArchiveRowNumber(archivesSheet, year, month);
+        var rowNumber = findArchiveRowNumber(archivesSheet, year, month);
       if (response.status === 'error') {
         archivesSheet.getRange(rowNumber, 11).setValue(String(response.error || response.code));
         archivesSheet.getRange(rowNumber, 7).setValue(now);
@@ -60,7 +67,15 @@ function fullBackfill() {
         archivesSheet.getRange(rowNumber, 9).setValue(ingestedCount);
         logEvent('INFO', 'BACKFILL_WRITE', 'Wrote rows for month', {year:year, month:month, rows:newRows.length});
       }
+      }
+      // time guard ~5.5 minutes
+      var elapsed = new Date().getTime() - startTime;
+      if (elapsed > 330000) {
+        props.setProperty('BACKFILL_CURSOR', String(i + batchSize));
+        return; // resume next run
+      }
     }
+    props.deleteProperty('BACKFILL_CURSOR');
   } finally {
     try { lock.releaseLock(); } catch (e) {}
   }

@@ -23,13 +23,14 @@ const CONFIG = {
       'start_time', 'end_time', 'duration_seconds', 'rated', 'time_class', 'rules', 'format',
       'player_username', 'player_color', 'player_rating', 'player_result', 'player_outcome', 'player_score',
       'opponent_username', 'opponent_color', 'opponent_rating',
-      'eco_code', 'eco_url', 'uuid'
+      'eco_code', 'eco_url', 'uuid',
+      'start_time_epoch', 'end_time_epoch', 'rating_change_exact', 'rating_is_exact'
     ],
     DailyActive: [
-      'date', 'format', 'wins', 'losses', 'draws', 'score', 'rating_start', 'rating_end', 'rating_change', 'games', 'duration_seconds'
+      'date', 'format', 'wins', 'losses', 'draws', 'score', 'rating_start', 'rating_end', 'rating_change', 'games', 'duration_seconds', 'rating_change_exact', 'is_rating_exact'
     ],
     DailyArchive: [
-      'date', 'format', 'wins', 'losses', 'draws', 'score', 'rating_start', 'rating_end', 'rating_change', 'games', 'duration_seconds'
+      'date', 'format', 'wins', 'losses', 'draws', 'score', 'rating_start', 'rating_end', 'rating_change', 'games', 'duration_seconds', 'rating_change_exact', 'is_rating_exact'
     ],
     CallbackStats: [
       'url', 'type', 'id', 'exact_rating_change', 'pregame_rating', 'data_json', 'fetched_at'
