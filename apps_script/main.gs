@@ -24,15 +24,8 @@ function fullBackfill() {
   Logger.log('Full backfill starting for %s', username);
 }
 
-function ingestActiveMonth() {
-  // Stub: will fetch active month with ETag and append new games only
-}
-
-function rebuildDailyTotals() {
-  // Stub: recompute daily totals
-}
-
-function runCallbacksBatch() {
-  // Stub: process a batch of callback lookups
-}
+// Orchestrators exposed for triggers/cron
+function ingestActiveMonth() { /* implemented in incremental.gs */ }
+function rebuildDailyTotals() { /* implemented in daily.gs */ }
+function runCallbacksBatch() { /* implemented in callbacks.gs */ }
 
