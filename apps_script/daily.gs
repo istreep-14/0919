@@ -38,20 +38,11 @@ function rebuildDailyTotals() {
     if (rating) b.ratings.push(Number(rating));
   }
 
-  var out = [];
-  for (var k in buckets) {
-    var b = buckets[k];
-    var rs = '', re = '', rc = '';
-    if (b.ratings.length) {
-      rs = Math.min.apply(null, b.ratings);
-      re = Math.max.apply(null, b.ratings);
-      rc = Number(re) - Number(rs);
-    }
-    out.push([b.date, b.format, b.wins, b.losses, b.draws, b.score, rs, re, rc, b.games, b.duration, '', '']);
+  var out = buildDailyRowsWithMain3(buckets);
+  if (out.length) {
+    writeRowsChunked(daily, out);
+    applyDailyTotalsDefaultView(daily);
   }
-  // Sort by date asc then format asc
-  out.sort(function(a,b){ if (a[0] !== b[0]) return a[0] < b[0] ? -1 : 1; return a[1] < b[1] ? -1 : (a[1] > b[1] ? 1 : 0); });
-  if (out.length) writeRowsChunked(daily, out);
 }
 
 function recomputeDailyForDates(dates) {
@@ -101,21 +92,11 @@ function recomputeDailyForDates(dates) {
     daily.getRange(2, 1, Math.max(0, daily.getLastRow() - 1), daily.getLastColumn()).clearContent();
     if (keep.length) daily.getRange(2, 1, keep.length, keep[0].length).setValues(keep);
   }
-  var out = [];
-  for (var key in buckets) {
-    var parts = key.split('|');
-    var date = parts[0];
-    var format = parts[1];
-    var b = buckets[key];
-    var rs = '', re = '', rc = '';
-    if (b.ratings.length) {
-      rs = Math.min.apply(null, b.ratings);
-      re = Math.max.apply(null, b.ratings);
-      rc = Number(re) - Number(rs);
-    }
-    out.push([date, format, b.wins, b.losses, b.draws, b.score, rs, re, rc, b.games, b.duration, '', '']);
+  var out = buildDailyRowsWithMain3(buckets);
+  if (out.length) {
+    writeRowsChunked(daily, out);
+    applyDailyTotalsDefaultView(daily);
   }
-  if (out.length) writeRowsChunked(daily, out);
 }
 
 function buildDailyTotalsInitial() {
@@ -147,13 +128,101 @@ function buildDailyTotalsInitial() {
     if (!isNaN(dur)) rec.duration += dur;
     map.set(key, rec);
   }
-  var out = [];
-  map.forEach(function(rec){
-    out.push([rec.date, rec.format, rec.wins, rec.losses, rec.draws, rec.score, rec.rating_start, rec.rating_end, (rec.rating_end === '' || rec.rating_start === '') ? '' : (rec.rating_end - rec.rating_start), rec.games, rec.duration]);
-  });
-  // Sort by date asc then format asc
-  out.sort(function(a,b){ if (a[0] !== b[0]) return a[0] < b[0] ? -1 : 1; return a[1] < b[1] ? -1 : (a[1] > b[1] ? 1 : 0); });
-  if (out.length) writeRowsChunked(daily, out, 2);
+  var out = buildDailyRowsWithMain3FromMap(map);
+  if (out.length) {
+    writeRowsChunked(daily, out, 2);
+    applyDailyTotalsDefaultView(daily);
+  }
 }
 
 // remove duplicate legacy recomputeDailyForDates implementation
+
+function buildDailyRowsWithMain3(buckets) {
+  var rows = [];
+  var byDate = {};
+  for (var key in buckets) {
+    var b = buckets[key];
+    var rs = '', re = '', rc = '';
+    if (b.ratings.length) {
+      rs = Math.min.apply(null, b.ratings);
+      re = Math.max.apply(null, b.ratings);
+      rc = Number(re) - Number(rs);
+    }
+    rows.push([b.date, b.format, b.wins, b.losses, b.draws, b.score, rs, re, rc, b.games, b.duration, '', '']);
+    (byDate[b.date] = byDate[b.date] || {})[b.format] = { wins: b.wins, losses: b.losses, draws: b.draws, score: b.score, games: b.games, duration: b.duration, rs: rs, re: re };
+  }
+  // Add Main3 aggregates
+  var main = ['bullet','blitz','rapid'];
+  Object.keys(byDate).forEach(function(date){
+    var d = byDate[date];
+    var wins=0,losses=0,draws=0,score=0,games=0,duration=0;
+    var starts=[], ends=[];
+    for (var i=0;i<main.length;i++){
+      var f = d[main[i]];
+      if (!f) continue;
+      wins+=f.wins; losses+=f.losses; draws+=f.draws; score+=f.score; games+=f.games; duration+=f.duration;
+      if (f.rs !== '') starts.push(Number(f.rs));
+      if (f.re !== '') ends.push(Number(f.re));
+    }
+    if (wins+losses+draws > 0) {
+      var rs = starts.length ? Math.min.apply(null, starts) : '';
+      var re = ends.length ? Math.max.apply(null, ends) : '';
+      var rc = (rs === '' || re === '') ? '' : (Number(re) - Number(rs));
+      rows.push([date, 'Main3', wins, losses, draws, score, rs, re, rc, games, duration, '', '']);
+    }
+  });
+  // Sort by date asc; format order: bullet, blitz, rapid, Main3, others alpha
+  var order = { bullet:1, blitz:2, rapid:3, Main3:4 };
+  rows.sort(function(a,b){
+    if (a[0] !== b[0]) return a[0] < b[0] ? -1 : 1;
+    var fa = a[1], fb = b[1];
+    var oa = order[fa] || 1000 + fa.charCodeAt(0);
+    var ob = order[fb] || 1000 + fb.charCodeAt(0);
+    return oa - ob;
+  });
+  return rows;
+}
+
+function buildDailyRowsWithMain3FromMap(map) {
+  var buckets = {};
+  map.forEach(function(rec){
+    var key = rec.date + '|' + rec.format;
+    buckets[key] = {
+      date: rec.date,
+      format: rec.format,
+      wins: rec.wins,
+      losses: rec.losses,
+      draws: rec.draws,
+      score: rec.score,
+      games: rec.games,
+      duration: rec.duration,
+      ratings: []
+    };
+    if (rec.rating_start !== '') buckets[key].ratings.push(Number(rec.rating_start));
+    if (rec.rating_end !== '') buckets[key].ratings.push(Number(rec.rating_end));
+  });
+  return buildDailyRowsWithMain3(buckets);
+}
+
+function applyDailyTotalsDefaultView(sheet) {
+  try {
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 2) return;
+    var formatCol = CONFIG.HEADERS.DailyTotals.indexOf('format') + 1; // 2
+    var dataRange = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn());
+    var values = dataRange.getValues();
+    var hideRows = [];
+    for (var i = 0; i < values.length; i++) {
+      var fmt = values[i][formatCol - 1];
+      if (fmt && fmt !== 'bullet' && fmt !== 'blitz' && fmt !== 'rapid' && fmt !== 'Main3') {
+        hideRows.push(2 + i);
+      }
+    }
+    // First unhide all for safety
+    sheet.showRows(2, Math.max(0, lastRow - 1));
+    // Then hide non-main formats by default
+    for (var j = 0; j < hideRows.length; j++) {
+      try { sheet.hideRows(hideRows[j]); } catch (e) {}
+    }
+  } catch (e) {}
+}

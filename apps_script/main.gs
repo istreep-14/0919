@@ -6,8 +6,8 @@ function setupProject() {
   getOrCreateSheet(gamesSS, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
 
   getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.Archives, CONFIG.HEADERS.Archives);
-  getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.DailyActive, CONFIG.HEADERS.DailyActive);
-  getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.DailyArchive, CONFIG.HEADERS.DailyArchive);
+  // Consolidated DailyTotals sheet is authoritative
+  getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.DailyTotals, CONFIG.HEADERS.DailyTotals);
   getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.CallbackStats, CONFIG.HEADERS.CallbackStats);
   getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.Logs, CONFIG.HEADERS.Logs);
 
@@ -26,3 +26,9 @@ function ingestActiveMonth() { /* implemented in incremental.gs */ }
 function rebuildDailyTotals() { /* implemented in daily.gs */ }
 function runCallbacksBatch() { /* implemented in callbacks.gs */ }
 function fullBackfill() { /* implemented in backfill.gs */ }
+function backfillLastRatings() { /* implemented in incremental.gs */ }
+function recheckInactiveArchives() { /* implemented in rollover.gs */ }
+
+// Enrichment jobs (stubs) — external per-game processors
+function runOpeningAnalysisBatch() { /* implemented in enrichment_openings.gs */ }
+function runGameDataBatch() { /* implemented in enrichment_gamedata.gs */ }

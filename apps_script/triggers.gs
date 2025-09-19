@@ -16,6 +16,13 @@ function installTriggers() {
     .nearMinute(10)
     .everyDays(1)
     .create();
+  // Monthly recheck of inactive archives on the 2nd of each month at ~02:15
+  ScriptApp.newTrigger('recheckInactiveArchives')
+    .timeBased()
+    .atHour(2)
+    .nearMinute(15)
+    .onMonthDay(2)
+    .create();
 }
 
 function resetTriggers() {

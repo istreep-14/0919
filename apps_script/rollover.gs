@@ -98,3 +98,46 @@ function finalizePreviousActiveMonth(allRows, activeRow) {
 }
 
 // DailyTotals now a single sheet; archival move removed
+
+function recheckInactiveArchives() {
+  var metricsSS = getOrCreateMetricsSpreadsheet();
+  var gamesSS = getOrCreateGamesSpreadsheet();
+  var sheet = getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.Archives, CONFIG.HEADERS.Archives);
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return;
+  var data = sheet.getRange(2, 1, lastRow - 1, CONFIG.HEADERS.Archives.length).getValues();
+  var now = new Date();
+  for (var i = 0; i < data.length; i++) {
+    var row = data[i];
+    if (String(row[3]) !== 'inactive') continue;
+    var url = row[2];
+    var etag = row[4];
+    var resp = fetchJsonWithEtag(url, etag);
+    if (resp.status === 'ok') {
+      var json = resp.json || {};
+      var rows = transformArchiveToRows(getConfiguredUsername(), json);
+      var urlIndex = buildExistingUrlIndex(gamesSS);
+      var newRows = [];
+      for (var r = 0; r < rows.length; r++) {
+        var u = rows[r][0];
+        if (u && !urlIndex.has(u)) newRows.push(rows[r]);
+      }
+      if (newRows.length) {
+        var gamesSheet = getOrCreateSheet(gamesSS, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
+        writeRowsChunked(gamesSheet, newRows);
+      }
+      var apiCount = (json && json.games) ? json.games.length : '';
+      var ingestedCount = countIngestedForArchive(gamesSS, parseInt(row[0],10), parseInt(row[1],10));
+      if (resp.etag) sheet.getRange(2 + i, 5).setValue(resp.etag);
+      if (resp.lastModified) sheet.getRange(2 + i, 6).setValue(resp.lastModified);
+      sheet.getRange(2 + i, 7).setValue(now);
+      sheet.getRange(2 + i, 8).setValue(apiCount);
+      sheet.getRange(2 + i, 9).setValue(ingestedCount);
+    } else if (resp.status === 'not_modified') {
+      sheet.getRange(2 + i, 7).setValue(now);
+    } else {
+      sheet.getRange(2 + i, 7).setValue(now);
+      sheet.getRange(2 + i, 11).setValue(String(resp.error || resp.code));
+    }
+  }
+}
