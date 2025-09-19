@@ -50,4 +50,3 @@ function pickPlayerColor(meUsername, whiteUsername, blackUsername) {
 function safe(val) {
   return (val === null || val === undefined) ? '' : val;
 }
-
