@@ -1,6 +1,117 @@
 function runCallbacksBatch() {
   var ss = getOrCreateSpreadsheet();
   var games = getOrCreateSheet(ss, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
+  var cb = getOrCreateSheet(ss, CONFIG.SHEET_NAMES.CallbackStats, CONFIG.HEADERS.CallbackStats);
+  var lastRow = games.getLastRow();
+  if (lastRow < 2) return;
+  var values = games.getRange(2, 1, lastRow - 1, games.getLastColumn()).getValues();
+
+  // Build a small batch of candidates not yet in CallbackStats
+  var existing = buildCallbackUrlIndex(cb);
+  var batch = [];
+  for (var i = 0; i < values.length && batch.length < 30; i++) {
+    var url = values[i][0];
+    if (!url || existing.has(url)) continue;
+    var type = values[i][1] || inferTypeFromUrl(url);
+    var id = values[i][2] || extractIdFromUrl(url);
+    if (!id) continue;
+    batch.push({ url: url, type: type, id: id });
+  }
+  if (!batch.length) return;
+
+  // Fetch each callback (serial is fine; could batch with fetchAll to speed up)
+  var outRows = [];
+  for (var j = 0; j < batch.length; j++) {
+    var b = batch[j];
+    var endpoint = b.type === 'daily' ? ('https://www.chess.com/callback/daily/game/' + b.id) : ('https://www.chess.com/callback/live/game/' + b.id);
+    try {
+      var resp = UrlFetchApp.fetch(endpoint, { muteHttpExceptions: true, headers: { 'User-Agent': 'ChessSheets/1.0 (AppsScript)' }});
+      var code = resp.getResponseCode();
+      if (code >= 200 && code < 300) {
+        var json = JSON.parse(resp.getContentText());
+        var exactChange = extractExactRatingChange(json, b);
+        var pregame = extractPregameRating(json, b);
+        outRows.push([b.url, b.type, b.id, exactChange, pregame, JSON.stringify(json), new Date()]);
+      } else if (code === 404) {
+        // record as not found to avoid retries soon
+        outRows.push([b.url, b.type, b.id, '', '', '{"error":404}', new Date()]);
+      } else {
+        logEvent('WARN', 'CALLBACK_HTTP', 'Non-2xx from callback', {url: endpoint, code: code});
+      }
+    } catch (e) {
+      logEvent('ERROR', 'CALLBACK_FETCH', 'Exception fetching callback', {url: endpoint, error: String(e)});
+    }
+  }
+  if (outRows.length) writeRowsChunked(cb, outRows);
+
+  // Optionally, update exact rating change in Games where available
+  if (outRows.length) applyExactChangesToGames(ss, outRows);
+}
+
+function buildCallbackUrlIndex(cbSheet) {
+  var last = cbSheet.getLastRow();
+  var set = new Set();
+  if (last < 2) return set;
+  var vals = cbSheet.getRange(2, 1, last - 1, 1).getValues();
+  for (var i = 0; i < vals.length; i++) {
+    var u = vals[i][0]; if (u) set.add(u);
+  }
+  return set;
+}
+
+function inferTypeFromUrl(url) {
+  if (url.indexOf('/game/daily/') >= 0) return 'daily';
+  return 'live';
+}
+
+function extractIdFromUrl(url) {
+  var segs = url.split('/');
+  return segs[segs.length - 1] || '';
+}
+
+function extractExactRatingChange(json, b) {
+  try {
+    if (!json || !json.game) return '';
+    if (b.type === 'daily') {
+      // Use ratingChange if present
+      return (json.game.ratingChange !== undefined) ? json.game.ratingChange : '';
+    }
+    return (json.game.ratingChange !== undefined) ? json.game.ratingChange : '';
+  } catch (e) { return ''; }
+}
+
+function extractPregameRating(json, b) {
+  try {
+    if (!json || !json.players) return '';
+    // Try to map to player's color by username property if needed later; for now, return top/bottom rating heuristic
+    var top = (json.players.top && json.players.top.rating) || '';
+    var bottom = (json.players.bottom && json.players.bottom.rating) || '';
+    return bottom || top || '';
+  } catch (e) { return ''; }
+}
+
+function applyExactChangesToGames(ss, outRows) {
+  var games = getOrCreateSheet(ss, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
+  var lastRow = games.getLastRow();
+  if (lastRow < 2) return;
+  var urls = games.getRange(2, 1, lastRow - 1, 1).getValues();
+  var mapUrlToRow = {};
+  for (var i = 0; i < urls.length; i++) mapUrlToRow[urls[i][0]] = 2 + i;
+  for (var j = 0; j < outRows.length; j++) {
+    var url = outRows[j][0];
+    var exact = outRows[j][3];
+    if (!url || exact === '' || exact === null || exact === undefined) continue;
+    var rnum = mapUrlToRow[url];
+    if (rnum) {
+      // For simplicity, write exact change to Logs or extend schema later if needed
+      // Placeholder: no schema column allocated in Games for exact flag; leaving as enrichment-only for now
+    }
+  }
+}
+
+function runCallbacksBatch() {
+  var ss = getOrCreateSpreadsheet();
+  var games = getOrCreateSheet(ss, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
   var callbacks = getOrCreateSheet(ss, CONFIG.SHEET_NAMES.CallbackStats, CONFIG.HEADERS.CallbackStats);
   var lastRow = games.getLastRow();
   if (lastRow < 2) return;

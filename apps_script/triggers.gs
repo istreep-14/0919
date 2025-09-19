@@ -1,15 +1,25 @@
 function installTriggers() {
-  // Clear existing project triggers
-  var triggers = ScriptApp.getProjectTriggers();
-  for (var i = 0; i < triggers.length; i++) {
-    ScriptApp.deleteTrigger(triggers[i]);
+  // Clear existing project triggers first
+  var all = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < all.length; i++) {
+    ScriptApp.deleteTrigger(all[i]);
   }
-  // Ingest active month every 5 minutes
-  ScriptApp.newTrigger('ingestActiveMonth').timeBased().everyMinutes(5).create();
-  // Monthly rollover on the 1st at 00:10
-  ScriptApp.newTrigger('ensureMonthRollover').timeBased().onMonthDay(1).atHour(0).nearMinute(10).create();
-  // Nightly health check at 01:00
-  ScriptApp.newTrigger('healthCheck').timeBased().atHour(1).everyDays(1).create();
+  // Ingest active month every 15 minutes
+  ScriptApp.newTrigger('ingestActiveMonth')
+    .timeBased()
+    .everyMinutes(15)
+    .create();
+  // Month rollover check at 01:10 daily (cheap, fast)
+  ScriptApp.newTrigger('ensureMonthRollover')
+    .timeBased()
+    .atHour(1)
+    .nearMinute(10)
+    .everyDays(1)
+    .create();
+}
+
+function resetTriggers() {
+  installTriggers();
 }
 
 function healthCheck() {
