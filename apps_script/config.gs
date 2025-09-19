@@ -2,7 +2,7 @@
 // Where to input: edit the values below directly in this file.
 const SETUP = {
   DONE: false, // set to true after setup is applied successfully
-  CHESS_USERNAME: 'your_username_here',
+  CHESS_USERNAME: 'ians141',
   TIMEZONE: 'America/New_York', // optional; leave empty to use project timezone
   SPREADSHEET_NAME_GAMES: 'Chess Data - Games',
   SPREADSHEET_NAME_METRICS: 'Chess Data - Metrics'
@@ -95,4 +95,3 @@ function setProjectProperties(obj) {
     props.setProperty(String(k), String(obj[k]));
   });
 }
-
