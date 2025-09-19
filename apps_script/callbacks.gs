@@ -188,34 +188,51 @@ function applyExactChangesToGames(gamesSS, metricsSS, outRows) {
   var idxEndTime = CONFIG.HEADERS.Games.indexOf('end_time');
   var idxExact = CONFIG.HEADERS.Games.indexOf('rating_change_exact');
   var idxExactFlag = CONFIG.HEADERS.Games.indexOf('rating_is_exact');
+  var idxExactPregame = CONFIG.HEADERS.Games.indexOf('exact_pregame_rating');
 
   var dateSet = {};
   for (var j = 0; j < outRows.length; j++) {
     var url = outRows[j][0];
-    var rawJson = outRows[j][5];
+    var myColor = outRows[j][3];
+    var myExactChange = outRows[j][4];
+    var myPregame = outRows[j][5];
+    var rawJson = outRows[j][28]; // data_json
     if (!url || !rawJson) continue;
     var entry = urlIdx[url];
     if (!entry) continue;
     var playerColor = entry.rowVals[idxPlayerColor];
     var exactForPlayer = '';
     try {
-      var obj = JSON.parse(rawJson);
-      if (obj && obj.game) {
-        if (playerColor === 'white') exactForPlayer = (obj.game.ratingChangeWhite !== undefined) ? obj.game.ratingChangeWhite : obj.game.ratingChange;
-        else if (playerColor === 'black') exactForPlayer = (obj.game.ratingChangeBlack !== undefined) ? obj.game.ratingChangeBlack : (obj.game.ratingChange ? -obj.game.ratingChange : '');
+      if (myExactChange !== '' && myExactChange !== null && myExactChange !== undefined) {
+        // Prefer parsed exact change from callback row (already per my color)
+        exactForPlayer = Number(myExactChange);
+      } else {
+        var obj = JSON.parse(rawJson);
+        if (obj && obj.game) {
+          if (playerColor === 'white') exactForPlayer = (obj.game.ratingChangeWhite !== undefined) ? obj.game.ratingChangeWhite : obj.game.ratingChange;
+          else if (playerColor === 'black') exactForPlayer = (obj.game.ratingChangeBlack !== undefined) ? obj.game.ratingChangeBlack : (obj.game.ratingChange ? -obj.game.ratingChange : '');
+        }
       }
     } catch (e) {}
     if (exactForPlayer === '' || exactForPlayer === null || exactForPlayer === undefined) continue;
     games.getRange(entry.rowNum, idxExact + 1).setValue(Number(exactForPlayer));
     games.getRange(entry.rowNum, idxExactFlag + 1).setValue(true);
+    // Set exact pregame rating if available
+    if (idxExactPregame >= 0 && myPregame !== '' && myPregame !== null && myPregame !== undefined) {
+      games.getRange(entry.rowNum, idxExactPregame + 1).setValue(Number(myPregame));
+    }
     var d = entry.rowVals[idxEndTime];
     if (d) {
       var dateKey = Utilities.formatDate(new Date(d), getProjectTimeZone(), 'yyyy-MM-dd');
       dateSet[dateKey] = true;
     }
+    // Logging for diagnostics
+    try { logInfo('CALLBACK_APPLY', 'Exact rating applied', { url: url, row: entry.rowNum, exact: exactForPlayer, pregame: myPregame }); } catch (e) {}
   }
   var dates = Object.keys(dateSet);
   if (dates.length) recomputeDailyForDates(dates);
+  // Also recompute last_rating/rating_change_last accurately by timestamp within format
+  try { backfillLastRatings(); } catch (e) {}
 }
 
 // removed duplicate runCallbacksBatch implementation
