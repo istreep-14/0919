@@ -110,4 +110,3 @@ function countIngestedForArchive(ss, year, month) {
   }
   return count;
 }
-
