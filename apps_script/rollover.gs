@@ -117,4 +117,3 @@ function moveDailyTotalsForMonth(year, month) {
   active.getRange(2, 1, Math.max(0, lastRow - 1), active.getLastColumn()).clearContent();
   if (keep.length) active.getRange(2, 1, keep.length, keep[0].length).setValues(keep);
 }
-
