@@ -201,4 +201,3 @@ function deriveExactRatingChange(cb) {
     return { change: '', pregame: '' };
   }
 }
-
