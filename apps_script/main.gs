@@ -19,16 +19,14 @@ function setupProject() {
   return JSON.stringify({ gamesUrl: gamesSS.getUrl(), metricsUrl: metricsSS.getUrl() });
 }
 
-// Backfill implemented in backfill.gs
+// Orchestrator implementations live in their respective files:
+// - ingestActiveMonth: incremental.gs
+// - rebuildDailyTotals: daily.gs
+// - runCallbacksBatch: callbacks.gs
+// - fullBackfill: backfill.gs
+// - backfillLastRatings: incremental.gs
+// - recheckInactiveArchives: rollover.gs
 
-// Orchestrators exposed for triggers/cron
-function ingestActiveMonth() { /* implemented in incremental.gs */ }
-function rebuildDailyTotals() { /* implemented in daily.gs */ }
-function runCallbacksBatch() { /* implemented in callbacks.gs */ }
-function fullBackfill() { /* implemented in backfill.gs */ }
-function backfillLastRatings() { /* implemented in incremental.gs */ }
-function recheckInactiveArchives() { /* implemented in rollover.gs */ }
-
-// Enrichment jobs (stubs) — external per-game processors
-function runOpeningAnalysisBatch() { /* implemented in enrichment_openings.gs */ }
-function runGameDataBatch() { /* implemented in enrichment_gamedata.gs */ }
+// Enrichment jobs implementations:
+// - runOpeningAnalysisBatch: enrichment_openings.gs
+// - runGameDataBatch: enrichment_gamedata.gs
