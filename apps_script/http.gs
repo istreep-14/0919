@@ -73,4 +73,3 @@ function fetchJsonBatchWithEtag(urls, etags) {
   }
   return out;
 }
-
