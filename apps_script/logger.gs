@@ -21,4 +21,3 @@ function logWarn(code, message, context) {
 function logError(code, message, context) {
   logRow('ERROR', code, message, context);
 }
-
