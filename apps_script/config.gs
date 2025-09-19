@@ -29,6 +29,8 @@ const CONFIG = {
     DailyArchive: 'DailyTotals_Archive',
     DailyTotals: 'DailyTotals',
     CallbackStats: 'CallbackStats',
+    LiveStatsEOD: 'LiveStatsEOD',
+    LiveStatsMeta: 'LiveStatsMeta',
     Logs: 'Logs'
   },
   HEADERS: {
@@ -63,6 +65,20 @@ const CONFIG = {
       'black_username', 'black_rating', 'black_country', 'black_membership', 'black_default_tab', 'black_post_move_action',
       'eco_code', 'pgn_date', 'pgn_time', 'base_time1', 'time_increment1',
       'data_json', 'fetched_at'
+    ],
+    LiveStatsEOD: [
+      'date', 'format', 'eod_rating', 'rating_raw', 'day_close_rating_raw', 'timestamp_ms', 'day_index'
+    ],
+    LiveStatsMeta: [
+      'fetched_at', 'format',
+      'count', 'rated_count',
+      'opponent_rating_avg', 'opponent_rating_win_avg', 'opponent_rating_draw_avg', 'opponent_rating_loss_avg',
+      'white_game_count', 'black_game_count', 'white_win_count', 'white_draw_count', 'white_loss_count', 'black_win_count', 'black_draw_count', 'black_loss_count',
+      'rating_last', 'rating_first', 'rating_max', 'rating_max_timestamp',
+      'moves_count', 'streak_last', 'streak_max', 'streak_max_timestamp',
+      'opponent_rating_max', 'opponent_rating_max_timestamp', 'opponent_rating_max_uuid',
+      'accuracy_count', 'accuracy_avg', 'starting_day',
+      'progress', 'rank', 'percentile', 'playersCount', 'friendRank', 'friendRankIsExpired'
     ],
     Logs: ['timestamp', 'level', 'code', 'message', 'context_json']
   }

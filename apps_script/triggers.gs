@@ -9,6 +9,11 @@ function installTriggers() {
     .timeBased()
     .everyMinutes(15)
     .create();
+  // Update live stats (bullet/blitz/rapid) every 2 hours
+  ScriptApp.newTrigger('updateLiveStatsAll')
+    .timeBased()
+    .everyHours(2)
+    .create();
   // Month rollover check at 01:10 daily (cheap, fast)
   ScriptApp.newTrigger('ensureMonthRollover')
     .timeBased()
