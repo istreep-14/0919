@@ -90,30 +90,11 @@ function finalizePreviousActiveMonth(allRows, activeRow) {
     archivesSheet.getRange(rowNumber, 11).setValue(String(response.error || response.code));
   }
 
-  // Move DailyTotals_Active rows for that month to archive and clear
-  moveDailyTotalsForMonth(year, month);
+  // DailyTotals is consolidated; rebuild for accuracy
+  rebuildDailyTotals();
 
   // Mark month inactive
   archivesSheet.getRange(rowNumber, 4).setValue('inactive');
 }
 
-function moveDailyTotalsForMonth(year, month) {
-  var metricsSS = getOrCreateMetricsSpreadsheet();
-  var active = getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.DailyActive, CONFIG.HEADERS.DailyActive);
-  var archive = getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.DailyArchive, CONFIG.HEADERS.DailyArchive);
-  var lastRow = active.getLastRow();
-  if (lastRow < 2) return;
-  var rows = active.getRange(2, 1, lastRow - 1, CONFIG.HEADERS.DailyActive.length).getValues();
-  var keep = [];
-  var move = [];
-  for (var i = 0; i < rows.length; i++) {
-    var d = new Date(rows[i][0]);
-    if (d.getFullYear() === year && (d.getMonth() + 1) === month) move.push(rows[i]); else keep.push(rows[i]);
-  }
-  if (move.length) {
-    writeRowsChunked(archive, move);
-  }
-  // Rewrite active with keep rows
-  active.getRange(2, 1, Math.max(0, lastRow - 1), active.getLastColumn()).clearContent();
-  if (keep.length) active.getRange(2, 1, keep.length, keep[0].length).setValues(keep);
-}
+// DailyTotals now a single sheet; archival move removed

@@ -27,6 +27,7 @@ const CONFIG = {
     Games: 'Games',
     DailyActive: 'DailyTotals_Active',
     DailyArchive: 'DailyTotals_Archive',
+    DailyTotals: 'DailyTotals',
     CallbackStats: 'CallbackStats',
     Logs: 'Logs'
   },
@@ -40,8 +41,11 @@ const CONFIG = {
       'start_time', 'end_time', 'duration_seconds', 'rated', 'time_class', 'rules', 'format',
       'player_username', 'player_color', 'player_rating', 'player_result', 'player_outcome', 'player_score',
       'opponent_username', 'opponent_color', 'opponent_rating',
-      'eco_code', 'eco_url', 'uuid',
+      'eco_code', 'eco_url', 'uuid', 'end_reason', 'pgn_moves',
       'start_time_epoch', 'end_time_epoch', 'rating_change_exact', 'rating_is_exact'
+    ],
+    DailyTotals: [
+      'date', 'format', 'wins', 'losses', 'draws', 'score', 'rating_start', 'rating_end', 'rating_change', 'games', 'duration_seconds', 'rating_change_exact', 'is_rating_exact'
     ],
     DailyActive: [
       'date', 'format', 'wins', 'losses', 'draws', 'score', 'rating_start', 'rating_end', 'rating_change', 'games', 'duration_seconds', 'rating_change_exact', 'is_rating_exact'

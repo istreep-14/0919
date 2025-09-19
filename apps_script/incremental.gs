@@ -46,7 +46,7 @@ function ingestActiveMonth() {
     var lastEpochStr = props.getProperty(cursorKey);
     var lastEpoch = lastEpochStr ? parseInt(lastEpochStr, 10) : 0;
     var allRows = transformArchiveToRows(username, json);
-    // Scan backwards (newest last) and collect new rows until hitting known end_time_epoch
+    // Scan backwards and keep order newest-first for append-at-top UX
     var newRows = [];
     for (var i = allRows.length - 1; i >= 0; i--) {
       var r = allRows[i];
@@ -54,11 +54,16 @@ function ingestActiveMonth() {
       if (lastEpoch && endEpoch && endEpoch <= lastEpoch) break;
       newRows.push(r);
     }
-    newRows.reverse();
 
     if (newRows.length) {
       var gamesSheet = getOrCreateSheet(gamesSS, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
-      writeRowsChunked(gamesSheet, newRows);
+      // Insert at top (after header) so newest appear first
+      var startRow = 2;
+      var colCount = newRows[0].length;
+      try {
+        gamesSheet.insertRowsBefore(startRow, newRows.length);
+      } catch (e) {}
+      gamesSheet.getRange(startRow, 1, newRows.length, colCount).setValues(newRows);
     }
 
     // Update archive metadata: etag, last_modified, last_checked, counts
