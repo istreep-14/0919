@@ -163,3 +163,12 @@ function ensureFileInProjectFolder(fileId) {
     } catch (e) {}
   } catch (e) {}
 }
+
+// Legacy compatibility for older "Metrics" API
+function getSpreadsheetNameMetrics() {
+  return getSpreadsheetNameLogs();
+}
+
+function getOrCreateMetricsSpreadsheet() {
+  return getOrCreateLogsSpreadsheet();
+}
