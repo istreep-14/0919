@@ -52,7 +52,14 @@ const CONFIG = {
       'game_count_api', 'game_count_ingested', 'callback_completed', 'errors', 'schema_version'
     ],
     Games: [
-      'url', 'end_time', 'rated', 'format', 'player_rating', 'opponent_rating', 'player_outcome'
+      'url',
+      'type', 'id',
+      'time_control', 'base_time', 'increment', 'correspondence_time',
+      'start_time', 'end_time', 'duration_seconds',
+      'rated', 'time_class', 'rules', 'format',
+      'player_username', 'player_color', 'player_rating', 'player_result', 'player_outcome', 'player_score',
+      'opponent_username', 'opponent_color', 'opponent_rating',
+      'eco_code', 'eco_url', 'uuid', 'end_reason', 'pgn_moves'
     ],
     DailyTotals: [
       'date', 'format', 'wins', 'losses', 'draws', 'score', 'rating_start', 'rating_end', 'rating_change', 'games', 'duration_seconds'
