@@ -99,6 +99,26 @@ function extractIdFromUrl(url) {
   return segs[segs.length - 1] || '';
 }
 
+function buildLastMethodIndexFromGames(values) {
+  var index = {};
+  try {
+    var h = CONFIG && CONFIG.HEADERS && CONFIG.HEADERS.Games ? CONFIG.HEADERS.Games : [];
+    var idxUrl = h.indexOf('url');
+    var idxLast = h.indexOf('last_rating');
+    var idxDeltaLast = h.indexOf('rating_change_last');
+    if (idxUrl < 0) idxUrl = 0;
+    for (var i = 0; i < values.length; i++) {
+      var row = values[i];
+      var url = row[idxUrl];
+      if (!url) continue;
+      var pre = (idxLast >= 0) ? row[idxLast] : '';
+      var chg = (idxDeltaLast >= 0) ? row[idxDeltaLast] : '';
+      index[url] = { change: chg === '' ? '' : Number(chg), pregame: pre === '' ? '' : Number(pre) };
+    }
+  } catch (e) {}
+  return index;
+}
+
 function extractExactRatingChange(json, b) {
   try {
     if (!json || !json.game) return '';
