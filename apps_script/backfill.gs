@@ -67,6 +67,7 @@ function fullBackfill() {
       }
       if (newRows.length) {
         var gamesSheet = getOrCreateSheet(gamesSS2, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
+        upgradeGamesHeaderIfNeeded(gamesSheet);
         writeRowsChunked(gamesSheet, newRows);
       }
       var apiCount = (json && json.games) ? json.games.length : '';

@@ -168,3 +168,33 @@ function ensureFileInProjectFolder(fileId) {
 // Deprecated: legacy "Metrics" alias kept for backward compatibility
 function getSpreadsheetNameMetrics() { return getSpreadsheetNameLogs(); }
 function getOrCreateMetricsSpreadsheet() { return getOrCreateLogsSpreadsheet(); }
+
+function upgradeGamesHeaderIfNeeded(sheet) {
+  try {
+    if (!sheet) return;
+    var desired = CONFIG && CONFIG.HEADERS && CONFIG.HEADERS.Games ? CONFIG.HEADERS.Games : null;
+    if (!desired || !desired.length) return;
+    var lastCol = sheet.getLastColumn();
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 1) {
+      // Empty sheet, write desired header
+      sheet.getRange(1, 1, 1, desired.length).setValues([desired]);
+      sheet.setFrozenRows(1);
+      return;
+    }
+    var header = sheet.getRange(1, 1, 1, lastCol).getValues()[0] || [];
+    var same = (header.length === desired.length);
+    if (same) {
+      for (var i = 0; i < header.length; i++) { if (String(header[i]) !== String(desired[i])) { same = false; break; } }
+    }
+    if (!same) {
+      sheet.getRange(1, 1, 1, desired.length).setValues([desired]);
+      if (lastCol > desired.length) {
+        try { sheet.getRange(1, desired.length + 1, 1, lastCol - desired.length).clearContent(); } catch (e) {}
+      }
+      sheet.setFrozenRows(1);
+    }
+  } catch (e) {
+    // best-effort
+  }
+}

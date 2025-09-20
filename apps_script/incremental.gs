@@ -87,6 +87,7 @@ function ingestActiveMonth() {
 
 function buildExistingUrlIndex(gamesSS) {
   var sheet = getOrCreateSheet(gamesSS, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
+  upgradeGamesHeaderIfNeeded(sheet);
   var lastRow = sheet.getLastRow();
   var index = new Set();
   if (lastRow < 2) return index;

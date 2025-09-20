@@ -75,6 +75,7 @@ function finalizePreviousActiveMonth(allRows, activeRow) {
     }
     if (newRows.length) {
       var gamesSheet = getOrCreateSheet(gamesSS, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
+      upgradeGamesHeaderIfNeeded(gamesSheet);
       writeRowsChunked(gamesSheet, newRows);
     }
     var apiCount = (json && json.games) ? json.games.length : '';
@@ -124,6 +125,7 @@ function recheckInactiveArchives() {
       }
       if (newRows.length) {
         var gamesSheet = getOrCreateSheet(gamesSS, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
+        upgradeGamesHeaderIfNeeded(gamesSheet);
         writeRowsChunked(gamesSheet, newRows);
       }
       var apiCount = (json && json.games) ? json.games.length : '';

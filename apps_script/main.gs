@@ -9,7 +9,8 @@ function setupProject() {
   const dailySS = getOrCreateDailyTotalsSpreadsheet();
   const logsSS = getOrCreateLogsSpreadsheet();
   // Ensure sheets and headers exist in the proper files
-  getOrCreateSheet(gamesSS, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
+  var gamesSheet = getOrCreateSheet(gamesSS, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
+  upgradeGamesHeaderIfNeeded(gamesSheet);
   getOrCreateSheet(callbacksSS, CONFIG.SHEET_NAMES.CallbackStats, CONFIG.HEADERS.CallbackStats);
   getOrCreateSheet(ratingsSS, CONFIG.SHEET_NAMES.RatingsTimeline, CONFIG.HEADERS.Ratings);
   getOrCreateSheet(ratingsSS, CONFIG.SHEET_NAMES.RatingsAdjustments, CONFIG.HEADERS.Adjustments);

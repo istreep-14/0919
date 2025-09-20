@@ -11,10 +11,15 @@ function rebuildDailyTotals() {
   var values = games.getRange(2, 1, lastRow - 1, games.getLastColumn()).getValues();
 
   var buckets = {};
+  var H = CONFIG.HEADERS.Games;
+  var IDX_END = H.indexOf('end_time');
+  var IDX_FORMAT = H.indexOf('format');
+  var IDX_OUTCOME = H.indexOf('player_outcome');
+  var IDX_RATING = H.indexOf('player_rating');
   for (var i = 0; i < values.length; i++) {
     var row = values[i];
-    var endTimeStr = row[1];
-    var format = row[3];
+    var endTimeStr = row[IDX_END];
+    var format = row[IDX_FORMAT];
     if (!endTimeStr || !format) continue;
     var d = new Date(endTimeStr);
     var key = Utilities.formatDate(d, getProjectTimeZone(), 'yyyy-MM-dd') + '|' + format;
@@ -25,10 +30,10 @@ function rebuildDailyTotals() {
       ratings: []
     };
     var b = buckets[key];
-    var outcome = row[6];
+    var outcome = row[IDX_OUTCOME];
     var score = (outcome === 'win') ? 1 : (outcome === 'draw' ? 0.5 : 0);
     var duration = 0; // duration dropped in simplified Games
-    var rating = row[4];
+    var rating = row[IDX_RATING];
     if (outcome === 'win') b.wins++;
     else if (outcome === 'draw') b.draws++;
     else b.losses++;
@@ -61,8 +66,8 @@ function recomputeDailyForDates(dates) {
   var buckets = {};
   for (var j = 0; j < values.length; j++) {
     var row = values[j];
-    var endTimeStr = row[1];
-    var format = row[3];
+    var endTimeStr = row[IDX_END];
+    var format = row[IDX_FORMAT];
     if (!endTimeStr || !format) continue;
     var d = new Date(endTimeStr);
     var dateKey = Utilities.formatDate(d, getProjectTimeZone(), 'yyyy-MM-dd');
@@ -70,10 +75,10 @@ function recomputeDailyForDates(dates) {
     var key = dateKey + '|' + format;
     if (!buckets[key]) buckets[key] = { date: dateKey, format: format, wins: 0, losses: 0, draws: 0, score: 0, games: 0, duration: 0, ratings: [] };
     var b = buckets[key];
-    var outcome = row[6];
+    var outcome = row[IDX_OUTCOME];
     var score = (outcome === 'win') ? 1 : (outcome === 'draw' ? 0.5 : 0);
     var duration = 0;
-    var rating = row[4];
+    var rating = row[IDX_RATING];
     if (outcome === 'win') b.wins++; else if (outcome === 'draw') b.draws++; else b.losses++;
     b.score += Number(score || 0);
     b.games++;
@@ -109,18 +114,23 @@ function buildDailyTotalsInitial() {
   if (lastRow < 2) return;
   var values = games.getRange(2, 1, lastRow - 1, games.getLastColumn()).getValues();
   var map = new Map(); // key: date|format
+  var H2 = CONFIG.HEADERS.Games;
+  var I_END = H2.indexOf('end_time');
+  var I_FORMAT = H2.indexOf('format');
+  var I_OUTCOME = H2.indexOf('player_outcome');
+  var I_RATING = H2.indexOf('player_rating');
   for (var i = 0; i < values.length; i++) {
     var row = values[i];
-    var endTimeStr = row[1];
-    var format = row[3];
+    var endTimeStr = row[I_END];
+    var format = row[I_FORMAT];
     if (!endTimeStr || !format) continue;
     var dayStr = Utilities.formatDate(new Date(endTimeStr), getProjectTimeZone(), 'yyyy-MM-dd');
     var key = dayStr + '|' + format;
     var rec = map.get(key) || { date: dayStr, format: format, wins: 0, losses: 0, draws: 0, score: 0, rating_start: '', rating_end: '', games: 0, duration: 0 };
-    var outcome = row[6];
+    var outcome = row[I_OUTCOME];
     if (outcome === 'win') rec.wins++; else if (outcome === 'draw') rec.draws++; else if (outcome === 'loss') rec.losses++;
     rec.score += (outcome === 'win') ? 1 : (outcome === 'draw' ? 0.5 : 0);
-    var rating = row[4];
+    var rating = row[I_RATING];
     if (rec.rating_start === '') rec.rating_start = rating;
     rec.rating_end = rating;
     rec.games++;
