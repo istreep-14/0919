@@ -22,6 +22,8 @@ function gameJsonToRow(meUsername, game) {
   var playerOutcome = mapResultToOutcome(playerResult);
   var playerScore = scoreFromOutcome(playerOutcome);
   var opponentResult = opponent && opponent.result ? String(opponent.result) : '';
+  var opponentOutcome = mapResultToOutcome(opponentResult);
+  var opponentScore = scoreFromOutcome(opponentOutcome);
   var ecoCode = (game.pgn && extractPgnHeader(game.pgn, 'ECO')) || game.eco || '';
   var ecoUrl = (game.pgn && extractPgnHeader(game.pgn, 'ECOUrl')) || game.eco_url || '';
   var uuid = game.uuid || '';
@@ -34,7 +36,7 @@ function gameJsonToRow(meUsername, game) {
     safe(startLocal), safe(endLocal), safe(durationSeconds),
     safe(game.rated), safe(timeClass), safe(rules), safe(format),
     safe(player.username), safe(meColor), safe(player.rating), safe(playerResult), safe(playerOutcome), safe(playerScore),
-    safe(opponent.username), safe(oppColor), safe(opponent.rating),
+    safe(opponent.username), safe(oppColor), safe(opponent.rating), safe(opponentResult), safe(opponentOutcome), safe(opponentScore),
     safe(ecoCode), safe(ecoUrl), safe(uuid), safe(endReason), safe(pgnMoves)
   ];
 }
@@ -109,17 +111,20 @@ function normalizeEndReason(playerOutcome, opponentResult, pgn) {
     if (tl.indexOf('50-move') >= 0 || tl.indexOf('50 move') >= 0) return '50move';
     if (tl.indexOf('draw') >= 0) return 'agreed';
   }
-  var r = String(opponentResult || '').toLowerCase();
-  if (!r) return '';
-  if (r === 'checkmated') return 'checkmate';
-  if (r === 'timeout') return 'timeout';
-  if (r === 'resigned') return 'resign';
-  if (r === 'abandoned') return 'abandoned';
-  if (r === 'stalemate') return 'stalemate';
-  if (r === 'repetition') return 'repetition';
-  if (r === 'insufficient') return 'insufficient';
-  if (r === '50move') return '50move';
-  if (r === 'timevsinsufficient') return 'timevsinsufficient';
+  // If not available from PGN, infer from loser result when decisive, else draw
+  var opp = String(opponentResult || '').toLowerCase();
+  if (playerOutcome === 'win') {
+    // Opponent lost: map opponent's result to reason
+    if (opp === 'checkmated') return 'checkmate';
+    if (opp === 'timeout') return 'timeout';
+    if (opp === 'resigned') return 'resign';
+    if (opp === 'abandoned') return 'abandoned';
+    if (opp === 'stalemate') return 'stalemate';
+    if (opp === 'repetition') return 'repetition';
+    if (opp === 'insufficient') return 'insufficient';
+    if (opp === '50move') return '50move';
+    if (opp === 'timevsinsufficient') return 'timevsinsufficient';
+  }
   if (playerOutcome === 'draw') return 'agreed';
   return '';
 }
