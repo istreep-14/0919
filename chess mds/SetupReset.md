@@ -5,10 +5,22 @@ Initial Setup (fresh project)
    - CHESS_USERNAME (required)
    - TIMEZONE (optional)
    - SPREADSHEET_NAME_GAMES (optional)
-   - SPREADSHEET_NAME_METRICS (optional)
+   - SPREADSHEET_NAME_CALLBACKS (optional)
+   - SPREADSHEET_NAME_RATINGS (optional)
+   - SPREADSHEET_NAME_STATS (optional)
+   - SPREADSHEET_NAME_LIVESTATS (optional)
+   - SPREADSHEET_NAME_ARCHIVES (optional)
+   - SPREADSHEET_NAME_DAILYTOTALS (optional)
+   - SPREADSHEET_NAME_LOGS (optional)
 2. Create/open spreadsheets:
    - Games: creates sheet `Games` with canonical headers.
-   - Metrics: creates `Archives`, `DailyTotals`, `CallbackStats`, `Logs` with headers.
+   - Callbacks: creates `CallbackStats`.
+   - Ratings: creates `Ratings` and `Adjustments`.
+   - Stats: creates `PlayerStats`.
+   - LiveStats: creates `LiveStatsEOD` and `LiveStatsMeta`.
+   - Archives: creates `Archives`.
+   - DailyTotals: creates `DailyTotals`.
+   - Logs: creates `Logs`.
 3. Discover and write `Archives` rows for all months.
 
 Full Backfill

@@ -4,7 +4,13 @@ This project ingests your complete Chess.com game history into Google Sheets, ke
 
 ### Components
 - Games spreadsheet: canonical table of all games (one row per game).
-- Metrics spreadsheet: operational/meta sheets — Archives, DailyTotals, CallbackStats, Logs.
+- Callbacks spreadsheet: `CallbackStats` (raw per-game callback JSON and derived fields).
+- Ratings spreadsheet: `Ratings` and `Adjustments` (timeline and manual adjustments).
+- Stats spreadsheet: `PlayerStats` (point-in-time player rating snapshots).
+- LiveStats spreadsheet: `LiveStatsEOD`, `LiveStatsMeta` (daily close and meta aggregates).
+- Archives spreadsheet: `Archives` (per-month operational metadata and counters).
+- DailyTotals spreadsheet: `DailyTotals` (aggregated per date+format performance).
+- Logs spreadsheet: `Logs` (structured events and diagnostics).
 
 ### Core Capabilities
 - Initial discovery of all monthly archive URLs for a user.
