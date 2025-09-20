@@ -38,8 +38,8 @@ function buildLiveStatsUrl(format, username) {
 
 function appendLiveStatsMeta(format, payload) {
   try {
-    var metricsSS = getOrCreateMetricsSpreadsheet();
-    var sheet = getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.LiveStatsMeta, CONFIG.HEADERS.LiveStatsMeta);
+    var liveSS = getOrCreateLiveStatsSpreadsheet();
+    var sheet = getOrCreateSheet(liveSS, CONFIG.SHEET_NAMES.LiveStatsMeta, CONFIG.HEADERS.LiveStatsMeta);
     var s = payload.stats || {};
     var row = [
       new Date(),
@@ -83,8 +83,8 @@ function appendLiveStatsHistory(format, payload) {
   // Sort ascending by timestamp so we append in chronological order
   newEntries.sort(function(a, b){ return Number(a.timestamp || 0) - Number(b.timestamp || 0); });
 
-  var metricsSS = getOrCreateMetricsSpreadsheet();
-  var sheet = getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.LiveStatsEOD, CONFIG.HEADERS.LiveStatsEOD);
+  var liveSS = getOrCreateLiveStatsSpreadsheet();
+  var sheet = getOrCreateSheet(liveSS, CONFIG.SHEET_NAMES.LiveStatsEOD, CONFIG.HEADERS.LiveStatsEOD);
   var tz = getProjectTimeZone();
   var rows = [];
   var maxTs = lastTs;

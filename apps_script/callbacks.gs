@@ -1,8 +1,8 @@
 function runCallbacksBatch() {
   var gamesSS = getOrCreateGamesSpreadsheet();
-  var metricsSS = getOrCreateMetricsSpreadsheet();
+  var cbSS = getOrCreateCallbacksSpreadsheet();
   var games = getOrCreateSheet(gamesSS, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
-  var cb = getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.CallbackStats, CONFIG.HEADERS.CallbackStats);
+  var cb = getOrCreateSheet(cbSS, CONFIG.SHEET_NAMES.CallbackStats, CONFIG.HEADERS.CallbackStats);
   // Ensure header schema is up-to-date (migrate white_/black_ -> my_/opp_)
   upgradeCallbackStatsHeaderIfNeeded(cb);
   var lastRow = games.getLastRow();
@@ -44,40 +44,13 @@ function runCallbacksBatch() {
       var json = {};
       try { json = JSON.parse(resp.getContentText() || '{}'); } catch (e) { json = {}; }
       var parsed = parseCallbackIdentity(json, b2);
-      var lg = lastIndex[b2.url] || { change: '', pregame: '' };
       var cbChange = (parsed.myExactChange === '' || parsed.myExactChange === null || parsed.myExactChange === undefined) ? '' : Number(parsed.myExactChange);
-      var cbPre = (parsed.myPregameRating === '' || parsed.myPregameRating === null || parsed.myPregameRating === undefined) ? '' : Number(parsed.myPregameRating);
-      var lgChange = (lg.change === '' || lg.change === null || lg.change === undefined) ? '' : Number(lg.change);
-      var lgPre = (lg.pregame === '' || lg.pregame === null || lg.pregame === undefined) ? '' : Number(lg.pregame);
-      var useCb = (cbChange !== '' && Number(cbChange) !== 0);
-      var method = useCb ? 'callback' : (lgChange !== '' ? 'lastgame' : '');
-      var appliedChange = useCb ? Number(cbChange) : (lgChange !== '' ? Number(lgChange) : '');
-      var appliedPre = (cbPre !== '' ? Number(cbPre) : (lgPre !== '' ? Number(lgPre) : ''));
-
-      // Opponent unified values
       var oppCbChange = (parsed.oppExactChange === '' || parsed.oppExactChange === null || parsed.oppExactChange === undefined) ? '' : Number(parsed.oppExactChange);
-      var oppCbPre = (parsed.oppPregameRating === '' || parsed.oppPregameRating === null || parsed.oppPregameRating === undefined) ? '' : Number(parsed.oppPregameRating);
-      var oppLgChange = (appliedChange === '' ? '' : -Number(appliedChange)); // negative of mine for lastgame
-      var oppLgPre = (appliedPre === '' ? '' : ''); // unknown from lastgame; leave blank
-      var oppUseCb = (oppCbChange !== '' && Number(oppCbChange) !== 0);
-      var oppMethod = oppUseCb ? 'callback' : (oppLgChange !== '' ? 'lastgame' : '');
-      var oppAppliedChange = oppUseCb ? Number(oppCbChange) : (oppLgChange !== '' ? Number(oppLgChange) : '');
-      var oppAppliedPre = (oppCbPre !== '' ? Number(oppCbPre) : (oppLgPre !== '' ? Number(oppLgPre) : ''));
 
       outRows.push([
         b2.url, b2.type, b2.id,
         parsed.myColor,
-        cbChange, cbPre,
-        lgChange, lgPre,
-        method, appliedChange, appliedPre,
-        parsed.oppColor,
-        oppCbChange, oppCbPre,
-        oppLgChange, oppLgPre,
-        oppMethod, oppAppliedChange, oppAppliedPre,
-        parsed.gameEndReason, parsed.isLive, parsed.isRated, parsed.plyCount,
-        parsed.myUser, parsed.myRating, parsed.myCountry, parsed.myMembership, parsed.myDefaultTab, parsed.myPostMove,
-        parsed.oppUser, parsed.oppRating, parsed.oppCountry, parsed.oppMembership, parsed.oppDefaultTab, parsed.oppPostMove,
-        parsed.ecoCode, parsed.pgnDate, parsed.pgnTime, parsed.baseTime1, parsed.timeIncrement1,
+        parsed.myRating, cbChange, oppCbChange,
         JSON.stringify(json), new Date()
       ]);
     } else if (code === 404) {

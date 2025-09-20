@@ -1,8 +1,8 @@
 function rebuildDailyTotals() {
   var gamesSS = getOrCreateGamesSpreadsheet();
-  var metricsSS = getOrCreateMetricsSpreadsheet();
+  var dailySS = getOrCreateDailyTotalsSpreadsheet();
   var games = getOrCreateSheet(gamesSS, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
-  var daily = getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.DailyTotals, CONFIG.HEADERS.DailyTotals);
+  var daily = getOrCreateSheet(dailySS, CONFIG.SHEET_NAMES.DailyTotals, CONFIG.HEADERS.DailyTotals);
 
   if (daily.getLastRow() > 1) daily.getRange(2, 1, daily.getLastRow() - 1, daily.getLastColumn()).clearContent();
 
@@ -13,8 +13,8 @@ function rebuildDailyTotals() {
   var buckets = {};
   for (var i = 0; i < values.length; i++) {
     var row = values[i];
-    var endTimeStr = row[8]; // end_time (local string)
-    var format = row[13];
+    var endTimeStr = row[1];
+    var format = row[3];
     if (!endTimeStr || !format) continue;
     var d = new Date(endTimeStr);
     var key = Utilities.formatDate(d, getProjectTimeZone(), 'yyyy-MM-dd') + '|' + format;
@@ -25,10 +25,10 @@ function rebuildDailyTotals() {
       ratings: []
     };
     var b = buckets[key];
-    var outcome = row[18]; // player_outcome
-    var score = row[19]; // player_score
-    var duration = row[9] || 0; // duration_seconds
-    var rating = row[16]; // player_rating
+    var outcome = row[6];
+    var score = (outcome === 'win') ? 1 : (outcome === 'draw' ? 0.5 : 0);
+    var duration = 0; // duration dropped in simplified Games
+    var rating = row[4];
     if (outcome === 'win') b.wins++;
     else if (outcome === 'draw') b.draws++;
     else b.losses++;
@@ -48,9 +48,9 @@ function rebuildDailyTotals() {
 function recomputeDailyForDates(dates) {
   if (!dates || !dates.length) return;
   var gamesSS = getOrCreateGamesSpreadsheet();
-  var metricsSS = getOrCreateMetricsSpreadsheet();
+  var dailySS = getOrCreateDailyTotalsSpreadsheet();
   var games = getOrCreateSheet(gamesSS, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
-  var daily = getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.DailyTotals, CONFIG.HEADERS.DailyTotals);
+  var daily = getOrCreateSheet(dailySS, CONFIG.SHEET_NAMES.DailyTotals, CONFIG.HEADERS.DailyTotals);
 
   var lastRow = games.getLastRow();
   if (lastRow < 2) return;
@@ -61,8 +61,8 @@ function recomputeDailyForDates(dates) {
   var buckets = {};
   for (var j = 0; j < values.length; j++) {
     var row = values[j];
-    var endTimeStr = row[8];
-    var format = row[13];
+    var endTimeStr = row[1];
+    var format = row[3];
     if (!endTimeStr || !format) continue;
     var d = new Date(endTimeStr);
     var dateKey = Utilities.formatDate(d, getProjectTimeZone(), 'yyyy-MM-dd');
@@ -70,10 +70,10 @@ function recomputeDailyForDates(dates) {
     var key = dateKey + '|' + format;
     if (!buckets[key]) buckets[key] = { date: dateKey, format: format, wins: 0, losses: 0, draws: 0, score: 0, games: 0, duration: 0, ratings: [] };
     var b = buckets[key];
-    var outcome = row[18];
-    var score = row[19];
-    var duration = row[9] || 0;
-    var rating = row[16];
+    var outcome = row[6];
+    var score = (outcome === 'win') ? 1 : (outcome === 'draw' ? 0.5 : 0);
+    var duration = 0;
+    var rating = row[4];
     if (outcome === 'win') b.wins++; else if (outcome === 'draw') b.draws++; else b.losses++;
     b.score += Number(score || 0);
     b.games++;
@@ -101,9 +101,9 @@ function recomputeDailyForDates(dates) {
 
 function buildDailyTotalsInitial() {
   var gamesSS = getOrCreateGamesSpreadsheet();
-  var metricsSS = getOrCreateMetricsSpreadsheet();
+  var dailySS = getOrCreateDailyTotalsSpreadsheet();
   var games = getOrCreateSheet(gamesSS, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
-  var daily = getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.DailyTotals, CONFIG.HEADERS.DailyTotals);
+  var daily = getOrCreateSheet(dailySS, CONFIG.SHEET_NAMES.DailyTotals, CONFIG.HEADERS.DailyTotals);
   if (daily.getLastRow() > 1) daily.getRange(2, 1, daily.getLastRow() - 1, daily.getLastColumn()).clearContent();
   var lastRow = games.getLastRow();
   if (lastRow < 2) return;
@@ -111,20 +111,20 @@ function buildDailyTotalsInitial() {
   var map = new Map(); // key: date|format
   for (var i = 0; i < values.length; i++) {
     var row = values[i];
-    var endTimeStr = row[8];
-    var format = row[13];
+    var endTimeStr = row[1];
+    var format = row[3];
     if (!endTimeStr || !format) continue;
     var dayStr = Utilities.formatDate(new Date(endTimeStr), getProjectTimeZone(), 'yyyy-MM-dd');
     var key = dayStr + '|' + format;
     var rec = map.get(key) || { date: dayStr, format: format, wins: 0, losses: 0, draws: 0, score: 0, rating_start: '', rating_end: '', games: 0, duration: 0 };
-    var outcome = row[18];
+    var outcome = row[6];
     if (outcome === 'win') rec.wins++; else if (outcome === 'draw') rec.draws++; else if (outcome === 'loss') rec.losses++;
     rec.score += (outcome === 'win') ? 1 : (outcome === 'draw' ? 0.5 : 0);
-    var rating = row[16];
+    var rating = row[4];
     if (rec.rating_start === '') rec.rating_start = rating;
     rec.rating_end = rating;
     rec.games++;
-    var dur = parseInt(row[9], 10);
+    var dur = 0;
     if (!isNaN(dur)) rec.duration += dur;
     map.set(key, rec);
   }

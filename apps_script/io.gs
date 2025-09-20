@@ -16,18 +16,93 @@ function getOrCreateGamesSpreadsheet() {
   return ss;
 }
 
-function getOrCreateMetricsSpreadsheet() {
+function getOrCreateCallbacksSpreadsheet() {
   const props = getScriptProps();
-  const existingId = props.getProperty('SPREADSHEET_ID_METRICS');
+  const key = 'SPREADSHEET_ID_CALLBACKS';
+  const existingId = props.getProperty(key);
   if (existingId) {
-    try {
-      var ssExisting = SpreadsheetApp.openById(existingId);
-      ensureFileInProjectFolder(ssExisting.getId());
-      return ssExisting;
-    } catch (e) {}
+    try { var ssExisting = SpreadsheetApp.openById(existingId); ensureFileInProjectFolder(ssExisting.getId()); return ssExisting; } catch (e) {}
   }
-  const ss = SpreadsheetApp.create(getSpreadsheetNameMetrics());
-  props.setProperty('SPREADSHEET_ID_METRICS', ss.getId());
+  const ss = SpreadsheetApp.create(getSpreadsheetNameCallbacks());
+  props.setProperty(key, ss.getId());
+  ensureFileInProjectFolder(ss.getId());
+  return ss;
+}
+
+function getOrCreateRatingsSpreadsheet() {
+  const props = getScriptProps();
+  const key = 'SPREADSHEET_ID_RATINGS';
+  const existingId = props.getProperty(key);
+  if (existingId) {
+    try { var ssExisting = SpreadsheetApp.openById(existingId); ensureFileInProjectFolder(ssExisting.getId()); return ssExisting; } catch (e) {}
+  }
+  const ss = SpreadsheetApp.create(getSpreadsheetNameRatings());
+  props.setProperty(key, ss.getId());
+  ensureFileInProjectFolder(ss.getId());
+  return ss;
+}
+
+function getOrCreateStatsSpreadsheet() {
+  const props = getScriptProps();
+  const key = 'SPREADSHEET_ID_STATS';
+  const existingId = props.getProperty(key);
+  if (existingId) {
+    try { var ssExisting = SpreadsheetApp.openById(existingId); ensureFileInProjectFolder(ssExisting.getId()); return ssExisting; } catch (e) {}
+  }
+  const ss = SpreadsheetApp.create(getSpreadsheetNameStats());
+  props.setProperty(key, ss.getId());
+  ensureFileInProjectFolder(ss.getId());
+  return ss;
+}
+
+function getOrCreateLiveStatsSpreadsheet() {
+  const props = getScriptProps();
+  const key = 'SPREADSHEET_ID_LIVESTATS';
+  const existingId = props.getProperty(key);
+  if (existingId) {
+    try { var ssExisting = SpreadsheetApp.openById(existingId); ensureFileInProjectFolder(ssExisting.getId()); return ssExisting; } catch (e) {}
+  }
+  const ss = SpreadsheetApp.create(getSpreadsheetNameLiveStats());
+  props.setProperty(key, ss.getId());
+  ensureFileInProjectFolder(ss.getId());
+  return ss;
+}
+
+function getOrCreateArchivesSpreadsheet() {
+  const props = getScriptProps();
+  const key = 'SPREADSHEET_ID_ARCHIVES';
+  const existingId = props.getProperty(key);
+  if (existingId) {
+    try { var ssExisting = SpreadsheetApp.openById(existingId); ensureFileInProjectFolder(ssExisting.getId()); return ssExisting; } catch (e) {}
+  }
+  const ss = SpreadsheetApp.create(getSpreadsheetNameArchives());
+  props.setProperty(key, ss.getId());
+  ensureFileInProjectFolder(ss.getId());
+  return ss;
+}
+
+function getOrCreateDailyTotalsSpreadsheet() {
+  const props = getScriptProps();
+  const key = 'SPREADSHEET_ID_DAILYTOTALS';
+  const existingId = props.getProperty(key);
+  if (existingId) {
+    try { var ssExisting = SpreadsheetApp.openById(existingId); ensureFileInProjectFolder(ssExisting.getId()); return ssExisting; } catch (e) {}
+  }
+  const ss = SpreadsheetApp.create(getSpreadsheetNameDailyTotals());
+  props.setProperty(key, ss.getId());
+  ensureFileInProjectFolder(ss.getId());
+  return ss;
+}
+
+function getOrCreateLogsSpreadsheet() {
+  const props = getScriptProps();
+  const key = 'SPREADSHEET_ID_LOGS';
+  const existingId = props.getProperty(key);
+  if (existingId) {
+    try { var ssExisting = SpreadsheetApp.openById(existingId); ensureFileInProjectFolder(ssExisting.getId()); return ssExisting; } catch (e) {}
+  }
+  const ss = SpreadsheetApp.create(getSpreadsheetNameLogs());
+  props.setProperty(key, ss.getId());
   ensureFileInProjectFolder(ss.getId());
   return ss;
 }
@@ -39,9 +114,8 @@ function getOrCreateSheet(ss, sheetName, headers) {
       ss = SpreadsheetApp.getActive();
     } catch (e) {}
     if (!ss) {
-      var metricsNames = CONFIG && CONFIG.SHEET_NAMES ? CONFIG.SHEET_NAMES : {};
-      var isMetricsSheet = (sheetName === metricsNames.Archives || sheetName === metricsNames.DailyTotals || sheetName === metricsNames.DailyActive || sheetName === metricsNames.DailyArchive || sheetName === metricsNames.CallbackStats || sheetName === metricsNames.Logs);
-      ss = isMetricsSheet ? getOrCreateMetricsSpreadsheet() : getOrCreateGamesSpreadsheet();
+      // Default fallback: use Games spreadsheet if unknown
+      ss = getOrCreateGamesSpreadsheet();
     }
   }
   var sheet = ss.getSheetByName(sheetName);

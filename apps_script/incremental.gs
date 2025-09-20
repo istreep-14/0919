@@ -5,9 +5,9 @@ function ingestActiveMonth() {
     // Ensure month rollover without hitting archives-list API
     ensureMonthRollover();
     var gamesSS = getOrCreateGamesSpreadsheet();
-    var metricsSS = getOrCreateMetricsSpreadsheet();
+    var archivesSS = getOrCreateArchivesSpreadsheet();
     var username = getConfiguredUsername();
-    var archivesSheet = getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.Archives, CONFIG.HEADERS.Archives);
+    var archivesSheet = getOrCreateSheet(archivesSS, CONFIG.SHEET_NAMES.Archives, CONFIG.HEADERS.Archives);
 
     var lastRow = archivesSheet.getLastRow();
     if (lastRow < 2) return;
@@ -40,65 +40,33 @@ function ingestActiveMonth() {
     }
 
     var json = response.json;
-    // Use per-month last_ingested_end_time pointer to avoid URL index scan
+    // Use per-month last_ingested_end_time pointer to avoid duplicates
     var props = getScriptProps();
     var cursorKey = 'CURSOR_' + year + '_' + month + '_END_EPOCH';
     var lastEpochStr = props.getProperty(cursorKey);
     var lastEpoch = lastEpochStr ? parseInt(lastEpochStr, 10) : 0;
     var allRows = transformArchiveToRows(username, json);
-    // Scan backwards and keep order newest-first for append-at-top UX
+    var endTimeIdx = CONFIG.HEADERS.Games.indexOf('end_time');
     var newRows = [];
-    for (var i = allRows.length - 1; i >= 0; i--) {
+    for (var i = 0; i < allRows.length; i++) {
       var r = allRows[i];
-      var endEpoch = Number(r[CONFIG.HEADERS.Games.indexOf('end_time_epoch')]);
-      if (lastEpoch && endEpoch && endEpoch <= lastEpoch) break;
+      var endStr = r[endTimeIdx];
+      var epoch = 0;
+      try { epoch = endStr ? Math.floor(new Date(endStr).getTime() / 1000) : 0; } catch (e) { epoch = 0; }
+      if (lastEpoch && epoch && epoch <= lastEpoch) continue;
       newRows.push(r);
     }
 
     if (newRows.length) {
       var gamesSheet = getOrCreateSheet(gamesSS, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
-      // Compute last_rating and rating_change_last for each row (needs format & prior rows)
-      var formatIdx = CONFIG.HEADERS.Games.indexOf('format');
-      var playerRatingIdx = CONFIG.HEADERS.Games.indexOf('player_rating');
-      var lastRatingIdx = CONFIG.HEADERS.Games.indexOf('last_rating');
-      var deltaLastIdx = CONFIG.HEADERS.Games.indexOf('rating_change_last');
-      // Build map of format → latest post rating from existing top rows
-      var existingLastRow = gamesSheet.getLastRow();
-      var existingVals = existingLastRow >= 2 ? gamesSheet.getRange(2, 1, existingLastRow - 1, gamesSheet.getLastColumn()).getValues() : [];
-      var latestPostByFormat = {};
-      for (var ex = 0; ex < existingVals.length; ex++) {
-        var f = existingVals[ex][formatIdx];
-        var r = existingVals[ex][playerRatingIdx];
-        if (f && r !== '' && latestPostByFormat[f] === undefined) {
-          latestPostByFormat[f] = Number(r);
-        }
-      }
-      // Process newRows in reverse (oldest first) to compute last_rating properly
-      for (var k = newRows.length - 1; k >= 0; k--) {
-        var row = newRows[k];
-        var f2 = row[formatIdx];
-        var post = row[playerRatingIdx];
-        var last = (f2 && latestPostByFormat.hasOwnProperty(f2)) ? latestPostByFormat[f2] : '';
-        // Ensure new columns present
-        while (row.length <= lastRatingIdx) row.push('');
-        row[lastRatingIdx] = (last === '' ? '' : Number(last));
-        while (row.length <= deltaLastIdx) row.push('');
-        row[deltaLastIdx] = (last === '' || post === '' ? '' : Number(post) - Number(last));
-        if (f2 && post !== '') latestPostByFormat[f2] = Number(post);
-      }
-      // Insert at top (after header) so newest appear first
-      var startRow = 2;
+      var startRow = gamesSheet.getLastRow() + 1;
       var colCount = newRows[0].length;
-      try {
-        gamesSheet.insertRowsBefore(startRow, newRows.length);
-      } catch (e) {}
       gamesSheet.getRange(startRow, 1, newRows.length, colCount).setValues(newRows);
     }
 
     // Update archive metadata: etag, last_modified, last_checked, counts
     var apiCount = (json && json.games) ? json.games.length : '';
-    var prevIngested = row[8] || 0;
-    var ingestedCount = Number(prevIngested) + Number(newRows.length || 0);
+    var ingestedCount = countIngestedForArchive(gamesSS, parseInt(year,10), parseInt(month,10));
     var idx3 = data.indexOf(row);
     if (response.etag) archivesSheet.getRange(idx3 + 2, 5).setValue(response.etag);
     if (response.lastModified) archivesSheet.getRange(idx3 + 2, 6).setValue(response.lastModified);
@@ -108,7 +76,8 @@ function ingestActiveMonth() {
     // Update cursor to newest row's end_time_epoch
     if (newRows.length) {
       var newest = newRows[newRows.length - 1];
-      var newestEpoch = Number(newest[CONFIG.HEADERS.Games.indexOf('end_time_epoch')]);
+      var newestEndStr = newest[endTimeIdx];
+      var newestEpoch = newestEndStr ? Math.floor(new Date(newestEndStr).getTime() / 1000) : 0;
       if (newestEpoch) props.setProperty(cursorKey, String(newestEpoch));
     }
   } finally {
@@ -133,11 +102,13 @@ function countIngestedForArchive(ss, year, month) {
   var sheet = getOrCreateSheet(ss, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) return 0;
-  var rng = sheet.getRange(2, 1, lastRow - 1, 9).getValues(); // url..end_time
+  var endIdx = CONFIG.HEADERS.Games.indexOf('end_time');
+  if (endIdx < 0) return 0;
+  var rng = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
   var y = parseInt(year, 10); var m = parseInt(month, 10);
   var count = 0;
   for (var i = 0; i < rng.length; i++) {
-    var endTimeStr = rng[i][8];
+    var endTimeStr = rng[i][endIdx];
     if (!endTimeStr) continue;
     var d = new Date(endTimeStr);
     if (d.getFullYear() === y && (d.getMonth() + 1) === m) count++;
@@ -145,38 +116,4 @@ function countIngestedForArchive(ss, year, month) {
   return count;
 }
 
-function backfillLastRatings() {
-  var gamesSS = getOrCreateGamesSpreadsheet();
-  var sheet = getOrCreateSheet(gamesSS, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
-  var lastRow = sheet.getLastRow();
-  if (lastRow < 2) return;
-  var values = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
-  var idxFormat = CONFIG.HEADERS.Games.indexOf('format');
-  var idxPost = CONFIG.HEADERS.Games.indexOf('player_rating');
-  var idxEnd = CONFIG.HEADERS.Games.indexOf('end_time');
-  var idxLast = CONFIG.HEADERS.Games.indexOf('last_rating');
-  var idxDelta = CONFIG.HEADERS.Games.indexOf('rating_change_last');
-  // Build per-format arrays with end_time for ordering
-  var byFormat = {};
-  for (var i = 0; i < values.length; i++) {
-    var r = values[i];
-    var fmt = r[idxFormat];
-    var endStr = r[idxEnd];
-    if (!fmt || !endStr) continue;
-    (byFormat[fmt] = byFormat[fmt] || []).push({ idx: i, end: new Date(endStr).getTime(), post: r[idxPost] });
-  }
-  Object.keys(byFormat).forEach(function(fmt){
-    var arr = byFormat[fmt];
-    arr.sort(function(a,b){ return a.end - b.end; });
-    var lastVal = '';
-    for (var k = 0; k < arr.length; k++) {
-      var entry = arr[k];
-      var row = values[entry.idx];
-      row[idxLast] = (lastVal === '' ? '' : Number(lastVal));
-      var postVal = row[idxPost];
-      row[idxDelta] = (lastVal === '' || postVal === '' ? '' : Number(postVal) - Number(lastVal));
-      if (postVal !== '') lastVal = Number(postVal);
-    }
-  });
-  sheet.getRange(2, 1, values.length, sheet.getLastColumn()).setValues(values);
-}
+function backfillLastRatings() { return; }
