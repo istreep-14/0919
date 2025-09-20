@@ -1,7 +1,7 @@
 function logRow(level, code, message, context) {
   try {
-    var metricsSS = getOrCreateMetricsSpreadsheet();
-    var sheet = getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.Logs, CONFIG.HEADERS.Logs);
+    var logsSS = getOrCreateLogsSpreadsheet();
+    var sheet = getOrCreateSheet(logsSS, CONFIG.SHEET_NAMES.Logs, CONFIG.HEADERS.Logs);
     var ts = new Date();
     var ctx = context ? JSON.stringify(context) : '';
     writeRowsChunked(sheet, [[ts, level || 'INFO', code || '', String(message || ''), ctx]]);

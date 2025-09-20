@@ -1,8 +1,10 @@
 function runCallbacksBatch() {
   var gamesSS = getOrCreateGamesSpreadsheet();
-  var metricsSS = getOrCreateMetricsSpreadsheet();
+  var cbSS = getOrCreateCallbacksSpreadsheet();
   var games = getOrCreateSheet(gamesSS, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
-  var cb = getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.CallbackStats, CONFIG.HEADERS.CallbackStats);
+  var cb = getOrCreateSheet(cbSS, CONFIG.SHEET_NAMES.CallbackStats, CONFIG.HEADERS.CallbackStats);
+  // Ensure header schema is up-to-date (migrate white_/black_ -> my_/opp_)
+  upgradeCallbackStatsHeaderIfNeeded(cb);
   var lastRow = games.getLastRow();
   if (lastRow < 2) return;
   var values = games.getRange(2, 1, lastRow - 1, games.getLastColumn()).getValues();
@@ -42,44 +44,24 @@ function runCallbacksBatch() {
       var json = {};
       try { json = JSON.parse(resp.getContentText() || '{}'); } catch (e) { json = {}; }
       var parsed = parseCallbackIdentity(json, b2);
-      var lg = lastIndex[b2.url] || { change: '', pregame: '' };
       var cbChange = (parsed.myExactChange === '' || parsed.myExactChange === null || parsed.myExactChange === undefined) ? '' : Number(parsed.myExactChange);
-      var cbPre = (parsed.myPregameRating === '' || parsed.myPregameRating === null || parsed.myPregameRating === undefined) ? '' : Number(parsed.myPregameRating);
-      var lgChange = (lg.change === '' || lg.change === null || lg.change === undefined) ? '' : Number(lg.change);
-      var lgPre = (lg.pregame === '' || lg.pregame === null || lg.pregame === undefined) ? '' : Number(lg.pregame);
-      var useCb = (cbChange !== '' && Number(cbChange) !== 0);
-      var method = useCb ? 'callback' : (lgChange !== '' ? 'lastgame' : '');
-      var appliedChange = useCb ? Number(cbChange) : (lgChange !== '' ? Number(lgChange) : '');
-      var appliedPre = (cbPre !== '' ? Number(cbPre) : (lgPre !== '' ? Number(lgPre) : ''));
-
-      // Opponent unified values
       var oppCbChange = (parsed.oppExactChange === '' || parsed.oppExactChange === null || parsed.oppExactChange === undefined) ? '' : Number(parsed.oppExactChange);
-      var oppCbPre = (parsed.oppPregameRating === '' || parsed.oppPregameRating === null || parsed.oppPregameRating === undefined) ? '' : Number(parsed.oppPregameRating);
-      var oppLgChange = (appliedChange === '' ? '' : -Number(appliedChange)); // negative of mine for lastgame
-      var oppLgPre = (appliedPre === '' ? '' : ''); // unknown from lastgame; leave blank
-      var oppUseCb = (oppCbChange !== '' && Number(oppCbChange) !== 0);
-      var oppMethod = oppUseCb ? 'callback' : (oppLgChange !== '' ? 'lastgame' : '');
-      var oppAppliedChange = oppUseCb ? Number(oppCbChange) : (oppLgChange !== '' ? Number(oppLgChange) : '');
-      var oppAppliedPre = (oppCbPre !== '' ? Number(oppCbPre) : (oppLgPre !== '' ? Number(oppLgPre) : ''));
 
       outRows.push([
         b2.url, b2.type, b2.id,
         parsed.myColor,
-        cbChange, cbPre,
-        lgChange, lgPre,
-        method, appliedChange, appliedPre,
-        parsed.oppColor,
-        oppCbChange, oppCbPre,
-        oppLgChange, oppLgPre,
-        oppMethod, oppAppliedChange, oppAppliedPre,
-        parsed.gameEndReason, parsed.isLive, parsed.isRated, parsed.plyCount,
-        parsed.whiteUser, parsed.whiteRating, parsed.whiteCountry, parsed.whiteMembership, parsed.whiteDefaultTab, parsed.whitePostMove,
-        parsed.blackUser, parsed.blackRating, parsed.blackCountry, parsed.blackMembership, parsed.blackDefaultTab, parsed.blackPostMove,
-        parsed.ecoCode, parsed.pgnDate, parsed.pgnTime, parsed.baseTime1, parsed.timeIncrement1,
+        parsed.myUser, parsed.myRating, parsed.myCountry, parsed.myMembership, parsed.myDefaultTab, parsed.myPostMove,
+        parsed.oppUser, parsed.oppRating, parsed.oppCountry, parsed.oppMembership, parsed.oppDefaultTab, parsed.oppPostMove,
+        cbChange, oppCbChange,
         JSON.stringify(json), new Date()
       ]);
     } else if (code === 404) {
-      outRows.push([b2.url, b2.type, b2.id, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '{"error":404}', new Date()]);
+      var total = CONFIG && CONFIG.HEADERS && CONFIG.HEADERS.CallbackStats ? CONFIG.HEADERS.CallbackStats.length : 0;
+      var row = [b2.url, b2.type, b2.id];
+      while (row.length < Math.max(0, total - 2)) row.push('');
+      row.push('{"error":404}');
+      row.push(new Date());
+      outRows.push(row);
     } else {
       var endpoint2 = b2.type === 'daily' ? ('https://www.chess.com/callback/daily/game/' + b2.id) : ('https://www.chess.com/callback/live/game/' + b2.id);
       logEvent('WARN', 'CALLBACK_HTTP', 'Non-2xx from callback', {url: endpoint2, code: code});
@@ -194,29 +176,60 @@ function parseCallbackIdentity(json, b) {
     oppPre = (bottom && bottom.color === 'white') ? bottom.rating : (top && top.color === 'white' ? top.rating : (pgn.WhiteElo || ''));
   }
 
+  function pickForColor(color, prop, fallback) {
+    try {
+      var fromTop = (players && players.top && players.top.color === color) ? players.top[prop] : '';
+      var fromBottom = (players && players.bottom && players.bottom.color === color) ? players.bottom[prop] : '';
+      var val = (fromTop !== '' && fromTop !== undefined && fromTop !== null) ? fromTop : ((fromBottom !== '' && fromBottom !== undefined && fromBottom !== null) ? fromBottom : '');
+      return (val === '' || val === undefined || val === null) ? (fallback || '') : val;
+    } catch (e) {
+      return fallback || '';
+    }
+  }
+
+  var oppColor = (myColor === 'white') ? 'black' : (myColor === 'black' ? 'white' : '');
+  var myUser = (myColor === 'white') ? whiteUser : ((myColor === 'black') ? blackUser : '');
+  var oppUser = (oppColor === 'white') ? whiteUser : ((oppColor === 'black') ? blackUser : '');
+  // Choose the player blocks for white/black once, then pull properties consistently
+  var whiteBlock = (players && players.top && players.top.color === 'white') ? players.top : ((players && players.bottom && players.bottom.color === 'white') ? players.bottom : {});
+  var blackBlock = (players && players.top && players.top.color === 'black') ? players.top : ((players && players.bottom && players.bottom.color === 'black') ? players.bottom : {});
+  function from(block, key, fallback) { var v = block && block[key]; return (v === undefined || v === null || v === '') ? (fallback || '') : v; }
+  var myBlock = (myColor === 'white') ? whiteBlock : ((myColor === 'black') ? blackBlock : {});
+  var oppBlock = (oppColor === 'white') ? whiteBlock : ((oppColor === 'black') ? blackBlock : {});
+  var myRating2 = from(myBlock, 'rating', (myColor === 'white') ? (pgn.WhiteElo || '') : ((myColor === 'black') ? (pgn.BlackElo || '') : ''));
+  var oppRating2 = from(oppBlock, 'rating', (oppColor === 'white') ? (pgn.WhiteElo || '') : ((oppColor === 'black') ? (pgn.BlackElo || '') : ''));
+  var myCountry = from(myBlock, 'countryName', '');
+  var oppCountry = from(oppBlock, 'countryName', '');
+  var myMembership = from(myBlock, 'membershipCode', '');
+  var oppMembership = from(oppBlock, 'membershipCode', '');
+  var myDefaultTab = from(myBlock, 'defaultTab', '');
+  var oppDefaultTab = from(oppBlock, 'defaultTab', '');
+  var myPostMove = from(myBlock, 'postMoveAction', '');
+  var oppPostMove = from(oppBlock, 'postMoveAction', '');
+
   return {
     myColor: myColor,
     myExactChange: (myExact === '' || myExact === null || myExact === undefined) ? '' : Number(myExact),
     myPregameRating: (myPre === '' || myPre === null || myPre === undefined) ? '' : Number(myPre),
-    oppColor: (myColor === 'white') ? 'black' : (myColor === 'black' ? 'white' : ''),
+    oppColor: oppColor,
     oppPregameRating: (oppPre === '' || oppPre === null || oppPre === undefined) ? '' : Number(oppPre),
     oppExactChange: (oppExact === '' || oppExact === null || oppExact === undefined) ? '' : Number(oppExact),
     gameEndReason: endReason,
     isLive: isLive,
     isRated: isRated,
     plyCount: ply,
-    whiteUser: whiteUser,
-    whiteRating: (players && players.top && players.top.color === 'white') ? players.top.rating : ((players && players.bottom && players.bottom.color === 'white') ? players.bottom.rating : (pgn.WhiteElo || '')),
-    whiteCountry: (players && players.top && players.top.color === 'white') ? (players.top.countryName || '') : ((players && players.bottom && players.bottom.color === 'white') ? (players.bottom.countryName || '') : ''),
-    whiteMembership: (players && players.top && players.top.color === 'white') ? (players.top.membershipCode || '') : ((players && players.bottom && players.bottom.color === 'white') ? (players.bottom.membershipCode || '') : ''),
-    whiteDefaultTab: (players && players.top && players.top.color === 'white') ? (players.top.defaultTab || '') : ((players && players.bottom && players.bottom.color === 'white') ? (players.bottom.defaultTab || '') : ''),
-    whitePostMove: (players && players.top && players.top.color === 'white') ? (players.top.postMoveAction || '') : ((players && players.bottom && players.bottom.color === 'white') ? (players.bottom.postMoveAction || '') : ''),
-    blackUser: blackUser,
-    blackRating: (players && players.top && players.top.color === 'black') ? players.top.rating : ((players && players.bottom && players.bottom.color === 'black') ? players.bottom.rating : (pgn.BlackElo || '')),
-    blackCountry: (players && players.top && players.top.color === 'black') ? (players.top.countryName || '') : ((players && players.bottom && players.bottom.color === 'black') ? (players.bottom.countryName || '') : ''),
-    blackMembership: (players && players.top && players.top.color === 'black') ? (players.top.membershipCode || '') : ((players && players.bottom && players.bottom.color === 'black') ? (players.bottom.membershipCode || '') : ''),
-    blackDefaultTab: (players && players.top && players.top.color === 'black') ? (players.top.defaultTab || '') : ((players && players.bottom && players.bottom.color === 'black') ? (players.bottom.defaultTab || '') : ''),
-    blackPostMove: (players && players.top && players.top.color === 'black') ? (players.top.postMoveAction || '') : ((players && players.bottom && players.bottom.color === 'black') ? (players.bottom.postMoveAction || '') : ''),
+    myUser: myUser,
+    myRating: myRating2,
+    myCountry: myCountry,
+    myMembership: myMembership,
+    myDefaultTab: myDefaultTab,
+    myPostMove: myPostMove,
+    oppUser: oppUser,
+    oppRating: oppRating2,
+    oppCountry: oppCountry,
+    oppMembership: oppMembership,
+    oppDefaultTab: oppDefaultTab,
+    oppPostMove: oppPostMove,
     ecoCode: ecoCode,
     pgnDate: pgnDate,
     pgnTime: pgnTime,
@@ -258,5 +271,30 @@ function deriveExactRatingChange(cb) {
     return { change: change, pregame: pre };
   } catch (e) {
     return { change: '', pregame: '' };
+  }
+}
+
+function upgradeCallbackStatsHeaderIfNeeded(sheet) {
+  try {
+    if (!sheet) return;
+    var lastCol = sheet.getLastColumn();
+    if (lastCol < 1) return;
+    var header = sheet.getRange(1, 1, 1, lastCol).getValues()[0] || [];
+    // Detect old schema by presence of 'white_username' column name
+    var hasOld = false;
+    for (var i = 0; i < header.length; i++) {
+      if (String(header[i]).trim() === 'white_username') { hasOld = true; break; }
+    }
+    if (!hasOld) return;
+    // Overwrite entire header row with new schema
+    var newHeader = CONFIG && CONFIG.HEADERS && CONFIG.HEADERS.CallbackStats ? CONFIG.HEADERS.CallbackStats : null;
+    if (!newHeader || !newHeader.length) return;
+    sheet.getRange(1, 1, 1, newHeader.length).setValues([newHeader]);
+    // If old sheet had more columns than new, clear the extras to avoid mismatches
+    if (lastCol > newHeader.length) {
+      sheet.getRange(1, newHeader.length + 1, 1, lastCol - newHeader.length).clearContent();
+    }
+  } catch (e) {
+    // best-effort; ignore
   }
 }

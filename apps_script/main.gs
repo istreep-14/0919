@@ -1,24 +1,31 @@
 function setupProject() {
   applySetupFromCode();
   const gamesSS = getOrCreateGamesSpreadsheet();
-  const metricsSS = getOrCreateMetricsSpreadsheet();
+  const callbacksSS = getOrCreateCallbacksSpreadsheet();
+  const ratingsSS = getOrCreateRatingsSpreadsheet();
+  const statsSS = getOrCreateStatsSpreadsheet();
+  const liveSS = getOrCreateLiveStatsSpreadsheet();
+  const archivesSS = getOrCreateArchivesSpreadsheet();
+  const dailySS = getOrCreateDailyTotalsSpreadsheet();
+  const logsSS = getOrCreateLogsSpreadsheet();
   // Ensure sheets and headers exist in the proper files
   getOrCreateSheet(gamesSS, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
-
-  getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.Archives, CONFIG.HEADERS.Archives);
-  // Consolidated DailyTotals sheet is authoritative
-  getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.DailyTotals, CONFIG.HEADERS.DailyTotals);
-  getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.CallbackStats, CONFIG.HEADERS.CallbackStats);
-  getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.LiveStatsEOD, CONFIG.HEADERS.LiveStatsEOD);
-  getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.LiveStatsMeta, CONFIG.HEADERS.LiveStatsMeta);
-  getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.Logs, CONFIG.HEADERS.Logs);
+  getOrCreateSheet(callbacksSS, CONFIG.SHEET_NAMES.CallbackStats, CONFIG.HEADERS.CallbackStats);
+  getOrCreateSheet(ratingsSS, CONFIG.SHEET_NAMES.RatingsTimeline, CONFIG.HEADERS.Ratings);
+  getOrCreateSheet(ratingsSS, CONFIG.SHEET_NAMES.RatingsAdjustments, CONFIG.HEADERS.Adjustments);
+  getOrCreateSheet(statsSS, CONFIG.SHEET_NAMES.PlayerStats, CONFIG.HEADERS.PlayerStats);
+  getOrCreateSheet(liveSS, CONFIG.SHEET_NAMES.LiveStatsEOD, CONFIG.HEADERS.LiveStatsEOD);
+  getOrCreateSheet(liveSS, CONFIG.SHEET_NAMES.LiveStatsMeta, CONFIG.HEADERS.LiveStatsMeta);
+  getOrCreateSheet(archivesSS, CONFIG.SHEET_NAMES.Archives, CONFIG.HEADERS.Archives);
+  getOrCreateSheet(dailySS, CONFIG.SHEET_NAMES.DailyTotals, CONFIG.HEADERS.DailyTotals);
+  getOrCreateSheet(logsSS, CONFIG.SHEET_NAMES.Logs, CONFIG.HEADERS.Logs);
 
   // Discover archives and write
   const username = getConfiguredUsername();
   const rows = discoverArchives(username);
-  writeArchivesSheet(metricsSS, rows);
+  writeArchivesSheet(archivesSS, rows);
 
-  return JSON.stringify({ gamesUrl: gamesSS.getUrl(), metricsUrl: metricsSS.getUrl() });
+  return JSON.stringify({ gamesUrl: gamesSS.getUrl(), callbacksUrl: callbacksSS.getUrl(), ratingsUrl: ratingsSS.getUrl(), statsUrl: statsSS.getUrl(), liveUrl: liveSS.getUrl(), archivesUrl: archivesSS.getUrl(), dailyTotalsUrl: dailySS.getUrl(), logsUrl: logsSS.getUrl() });
 }
 
 // Orchestrator implementations live in their respective files:

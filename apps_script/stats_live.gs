@@ -36,10 +36,44 @@ function buildLiveStatsUrl(format, username) {
   return 'https://www.chess.com/callback/stats/live/' + encodeURIComponent(format) + '/' + encodeURIComponent(username) + '/0';
 }
 
+function fetchPlayerStatsSnapshot() {
+  var statsSS = getOrCreateStatsSpreadsheet();
+  var sheet = getOrCreateSheet(statsSS, CONFIG.SHEET_NAMES.PlayerStats, CONFIG.HEADERS.PlayerStats);
+  var username = getConfiguredUsername();
+  var url = 'https://api.chess.com/pub/player/' + encodeURIComponent(username) + '/stats';
+  try {
+    var resp = UrlFetchApp.fetch(url, { muteHttpExceptions: true, followRedirects: true, headers: { 'User-Agent': 'ChessSheets/1.0 (AppsScript)', 'Accept': 'application/json' } });
+    var code = resp.getResponseCode();
+    if (code < 200 || code >= 300) { logWarn('STATS_HTTP', 'Non-2xx from player stats', { code: code }); return; }
+    var json = JSON.parse(resp.getContentText() || '{}');
+    var now = new Date();
+    var formatMap = {
+      bullet: 'chess_bullet',
+      blitz: 'chess_blitz',
+      rapid: 'chess_rapid',
+      daily: 'chess_daily',
+      live960: 'chess960',
+      daily960: 'chess960_daily'
+    };
+    var rows = [];
+    Object.keys(formatMap).forEach(function(fmt){
+      var key = formatMap[fmt];
+      var obj = json && json[key];
+      if (!obj || !obj.last) return;
+      var rating = obj.last && obj.last.rating;
+      var rd = obj.last && obj.last.rd;
+      rows.push([now, fmt, (rating === undefined || rating === null ? '' : Number(rating)), (rd === undefined || rd === null ? '' : Number(rd)), 'player_stats', JSON.stringify(obj)]);
+    });
+    if (rows.length) writeRowsChunked(sheet, rows);
+  } catch (e) {
+    logError('STATS_ERR', String(e && e.message || e), {});
+  }
+}
+
 function appendLiveStatsMeta(format, payload) {
   try {
-    var metricsSS = getOrCreateMetricsSpreadsheet();
-    var sheet = getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.LiveStatsMeta, CONFIG.HEADERS.LiveStatsMeta);
+    var liveSS = getOrCreateLiveStatsSpreadsheet();
+    var sheet = getOrCreateSheet(liveSS, CONFIG.SHEET_NAMES.LiveStatsMeta, CONFIG.HEADERS.LiveStatsMeta);
     var s = payload.stats || {};
     var row = [
       new Date(),
@@ -83,8 +117,8 @@ function appendLiveStatsHistory(format, payload) {
   // Sort ascending by timestamp so we append in chronological order
   newEntries.sort(function(a, b){ return Number(a.timestamp || 0) - Number(b.timestamp || 0); });
 
-  var metricsSS = getOrCreateMetricsSpreadsheet();
-  var sheet = getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.LiveStatsEOD, CONFIG.HEADERS.LiveStatsEOD);
+  var liveSS = getOrCreateLiveStatsSpreadsheet();
+  var sheet = getOrCreateSheet(liveSS, CONFIG.SHEET_NAMES.LiveStatsEOD, CONFIG.HEADERS.LiveStatsEOD);
   var tz = getProjectTimeZone();
   var rows = [];
   var maxTs = lastTs;

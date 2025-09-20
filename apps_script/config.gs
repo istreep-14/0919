@@ -5,7 +5,13 @@ const SETUP = {
   CHESS_USERNAME: 'ians141',
   TIMEZONE: 'America/New_York', // optional; leave empty to use project timezone
   SPREADSHEET_NAME_GAMES: 'Chess Data - Games',
-  SPREADSHEET_NAME_METRICS: 'Chess Data - Metrics'
+  SPREADSHEET_NAME_CALLBACKS: 'Chess Data - Callbacks',
+  SPREADSHEET_NAME_RATINGS: 'Chess Data - Ratings',
+  SPREADSHEET_NAME_STATS: 'Chess Data - Stats',
+  SPREADSHEET_NAME_LIVESTATS: 'Chess Data - LiveStats',
+  SPREADSHEET_NAME_ARCHIVES: 'Chess Data - Archives',
+  SPREADSHEET_NAME_DAILYTOTALS: 'Chess Data - DailyTotals',
+  SPREADSHEET_NAME_LOGS: 'Chess Data - Logs'
 };
 
 function applySetupFromCode() {
@@ -14,7 +20,13 @@ function applySetupFromCode() {
   if (SETUP.CHESS_USERNAME) props.setProperty('CHESS_USERNAME', SETUP.CHESS_USERNAME);
   if (SETUP.TIMEZONE) props.setProperty('TIMEZONE', SETUP.TIMEZONE);
   if (SETUP.SPREADSHEET_NAME_GAMES) props.setProperty('SPREADSHEET_NAME_GAMES', SETUP.SPREADSHEET_NAME_GAMES);
-  if (SETUP.SPREADSHEET_NAME_METRICS) props.setProperty('SPREADSHEET_NAME_METRICS', SETUP.SPREADSHEET_NAME_METRICS);
+  if (SETUP.SPREADSHEET_NAME_CALLBACKS) props.setProperty('SPREADSHEET_NAME_CALLBACKS', SETUP.SPREADSHEET_NAME_CALLBACKS);
+  if (SETUP.SPREADSHEET_NAME_RATINGS) props.setProperty('SPREADSHEET_NAME_RATINGS', SETUP.SPREADSHEET_NAME_RATINGS);
+  if (SETUP.SPREADSHEET_NAME_STATS) props.setProperty('SPREADSHEET_NAME_STATS', SETUP.SPREADSHEET_NAME_STATS);
+  if (SETUP.SPREADSHEET_NAME_LIVESTATS) props.setProperty('SPREADSHEET_NAME_LIVESTATS', SETUP.SPREADSHEET_NAME_LIVESTATS);
+  if (SETUP.SPREADSHEET_NAME_ARCHIVES) props.setProperty('SPREADSHEET_NAME_ARCHIVES', SETUP.SPREADSHEET_NAME_ARCHIVES);
+  if (SETUP.SPREADSHEET_NAME_DAILYTOTALS) props.setProperty('SPREADSHEET_NAME_DAILYTOTALS', SETUP.SPREADSHEET_NAME_DAILYTOTALS);
+  if (SETUP.SPREADSHEET_NAME_LOGS) props.setProperty('SPREADSHEET_NAME_LOGS', SETUP.SPREADSHEET_NAME_LOGS);
 }
 
 const CONFIG = {
@@ -25,10 +37,11 @@ const CONFIG = {
   SHEET_NAMES: {
     Archives: 'Archives',
     Games: 'Games',
-    DailyActive: 'DailyTotals_Active',
-    DailyArchive: 'DailyTotals_Archive',
     DailyTotals: 'DailyTotals',
     CallbackStats: 'CallbackStats',
+    RatingsTimeline: 'Ratings',
+    RatingsAdjustments: 'Adjustments',
+    PlayerStats: 'PlayerStats',
     LiveStatsEOD: 'LiveStatsEOD',
     LiveStatsMeta: 'LiveStatsMeta',
     Logs: 'Logs'
@@ -39,13 +52,7 @@ const CONFIG = {
       'game_count_api', 'game_count_ingested', 'callback_completed', 'errors', 'schema_version'
     ],
     Games: [
-      'url', 'type', 'id', 'time_control', 'base_time', 'increment', 'correspondence_time',
-      'start_time', 'end_time', 'duration_seconds', 'rated', 'time_class', 'rules', 'format',
-      'player_username', 'player_color', 'player_rating', 'player_result', 'player_outcome', 'player_score',
-      'opponent_username', 'opponent_color', 'opponent_rating',
-      'eco_code', 'eco_url', 'uuid', 'end_reason', 'pgn_moves',
-      'start_time_epoch', 'end_time_epoch', 'rating_change_exact', 'rating_is_exact',
-      'last_rating', 'rating_change_last', 'exact_pregame_rating'
+      'url', 'end_time', 'rated', 'format', 'player_rating', 'opponent_rating', 'player_outcome'
     ],
     DailyTotals: [
       'date', 'format', 'wins', 'losses', 'draws', 'score', 'rating_start', 'rating_end', 'rating_change', 'games', 'duration_seconds'
@@ -57,20 +64,23 @@ const CONFIG = {
       'date', 'format', 'wins', 'losses', 'draws', 'score', 'rating_start', 'rating_end', 'rating_change', 'games', 'duration_seconds'
     ],
     CallbackStats: [
-      'url', 'type', 'id',
-      'my_color',
-      'callback_rating_change', 'callback_pregame_rating',
-      'lastgame_rating_change', 'lastgame_pregame_rating',
-      'method_used', 'rating_change_applied', 'pregame_rating_applied',
-      'opp_color',
-      'opp_callback_rating_change', 'opp_callback_pregame_rating',
-      'opp_lastgame_rating_change', 'opp_lastgame_pregame_rating',
-      'opp_method_used', 'opp_rating_change_applied', 'opp_pregame_rating_applied',
-      'game_end_reason', 'is_live_game', 'is_rated', 'ply_count',
-      'white_username', 'white_rating', 'white_country', 'white_membership', 'white_default_tab', 'white_post_move_action',
-      'black_username', 'black_rating', 'black_country', 'black_membership', 'black_default_tab', 'black_post_move_action',
-      'eco_code', 'pgn_date', 'pgn_time', 'base_time1', 'time_increment1',
+      'url', 'type', 'id', 'my_color',
+      'my_username', 'my_rating', 'my_country', 'my_membership', 'my_default_tab', 'my_post_move_action',
+      'opp_username', 'opp_rating', 'opp_country', 'opp_membership', 'opp_default_tab', 'opp_post_move_action',
+      'my_delta_callback', 'opp_delta_callback',
       'data_json', 'fetched_at'
+    ],
+    Ratings: [
+      'timestamp', 'kind', 'format', 'url', 'rated', 'player_outcome',
+      'my_pregame_last', 'my_delta_last', 'opp_pregame_last', 'opp_delta_last',
+      'my_pregame_cb', 'my_delta_cb', 'opp_pregame_cb', 'opp_delta_cb',
+      'note', 'source_json'
+    ],
+    Adjustments: [
+      'timestamp', 'format', 'delta', 'before', 'after', 'note'
+    ],
+    PlayerStats: [
+      'timestamp', 'format', 'rating', 'rd', 'source', 'raw_json'
     ],
     LiveStatsEOD: [
       'date', 'format', 'eod_rating', 'rating_raw', 'day_close_rating_raw', 'timestamp_ms', 'day_index'
@@ -117,10 +127,13 @@ function getSpreadsheetNameGames() {
   return props.getProperty('SPREADSHEET_NAME_GAMES') || (CONFIG.SPREADSHEET_NAME + ' - Data-Games');
 }
 
-function getSpreadsheetNameMetrics() {
-  const props = getScriptProps();
-  return props.getProperty('SPREADSHEET_NAME_METRICS') || (CONFIG.SPREADSHEET_NAME + ' - Metrics');
-}
+function getSpreadsheetNameCallbacks() { const props = getScriptProps(); return props.getProperty('SPREADSHEET_NAME_CALLBACKS') || (CONFIG.SPREADSHEET_NAME + ' - Callbacks'); }
+function getSpreadsheetNameRatings() { const props = getScriptProps(); return props.getProperty('SPREADSHEET_NAME_RATINGS') || (CONFIG.SPREADSHEET_NAME + ' - Ratings'); }
+function getSpreadsheetNameStats() { const props = getScriptProps(); return props.getProperty('SPREADSHEET_NAME_STATS') || (CONFIG.SPREADSHEET_NAME + ' - Stats'); }
+function getSpreadsheetNameLiveStats() { const props = getScriptProps(); return props.getProperty('SPREADSHEET_NAME_LIVESTATS') || (CONFIG.SPREADSHEET_NAME + ' - LiveStats'); }
+function getSpreadsheetNameArchives() { const props = getScriptProps(); return props.getProperty('SPREADSHEET_NAME_ARCHIVES') || (CONFIG.SPREADSHEET_NAME + ' - Archives'); }
+function getSpreadsheetNameDailyTotals() { const props = getScriptProps(); return props.getProperty('SPREADSHEET_NAME_DAILYTOTALS') || (CONFIG.SPREADSHEET_NAME + ' - DailyTotals'); }
+function getSpreadsheetNameLogs() { const props = getScriptProps(); return props.getProperty('SPREADSHEET_NAME_LOGS') || (CONFIG.SPREADSHEET_NAME + ' - Logs'); }
 
 function setProjectProperties(obj) {
   const props = getScriptProps();

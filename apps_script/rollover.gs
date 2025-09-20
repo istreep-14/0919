@@ -1,6 +1,6 @@
 function ensureMonthRollover() {
-  var metricsSS = getOrCreateMetricsSpreadsheet();
-  var archivesSheet = getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.Archives, CONFIG.HEADERS.Archives);
+  var archivesSS = getOrCreateArchivesSpreadsheet();
+  var archivesSheet = getOrCreateSheet(archivesSS, CONFIG.SHEET_NAMES.Archives, CONFIG.HEADERS.Archives);
   var lastRow = archivesSheet.getLastRow();
   if (lastRow < 2) return; // nothing yet
   var values = archivesSheet.getRange(2, 1, lastRow - 1, CONFIG.HEADERS.Archives.length).getValues();
@@ -50,9 +50,9 @@ function buildArchiveUrl(username, year, month) {
 }
 
 function finalizePreviousActiveMonth(allRows, activeRow) {
-  var metricsSS = getOrCreateMetricsSpreadsheet();
+  var archivesSS = getOrCreateArchivesSpreadsheet();
   var gamesSS = getOrCreateGamesSpreadsheet();
-  var archivesSheet = getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.Archives, CONFIG.HEADERS.Archives);
+  var archivesSheet = getOrCreateSheet(archivesSS, CONFIG.SHEET_NAMES.Archives, CONFIG.HEADERS.Archives);
   var username = getConfiguredUsername();
   var now = new Date();
   var idx = allRows.indexOf(activeRow);
@@ -100,9 +100,9 @@ function finalizePreviousActiveMonth(allRows, activeRow) {
 // DailyTotals now a single sheet; archival move removed
 
 function recheckInactiveArchives() {
-  var metricsSS = getOrCreateMetricsSpreadsheet();
+  var archivesSS = getOrCreateArchivesSpreadsheet();
   var gamesSS = getOrCreateGamesSpreadsheet();
-  var sheet = getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.Archives, CONFIG.HEADERS.Archives);
+  var sheet = getOrCreateSheet(archivesSS, CONFIG.SHEET_NAMES.Archives, CONFIG.HEADERS.Archives);
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) return;
   var data = sheet.getRange(2, 1, lastRow - 1, CONFIG.HEADERS.Archives.length).getValues();
