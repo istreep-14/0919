@@ -3,6 +3,8 @@ function runCallbacksBatch() {
   var metricsSS = getOrCreateMetricsSpreadsheet();
   var games = getOrCreateSheet(gamesSS, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
   var cb = getOrCreateSheet(metricsSS, CONFIG.SHEET_NAMES.CallbackStats, CONFIG.HEADERS.CallbackStats);
+  // Ensure header schema is up-to-date (migrate white_/black_ -> my_/opp_)
+  upgradeCallbackStatsHeaderIfNeeded(cb);
   var lastRow = games.getLastRow();
   if (lastRow < 2) return;
   var values = games.getRange(2, 1, lastRow - 1, games.getLastColumn()).getValues();
@@ -73,13 +75,18 @@ function runCallbacksBatch() {
         oppLgChange, oppLgPre,
         oppMethod, oppAppliedChange, oppAppliedPre,
         parsed.gameEndReason, parsed.isLive, parsed.isRated, parsed.plyCount,
-        parsed.whiteUser, parsed.whiteRating, parsed.whiteCountry, parsed.whiteMembership, parsed.whiteDefaultTab, parsed.whitePostMove,
-        parsed.blackUser, parsed.blackRating, parsed.blackCountry, parsed.blackMembership, parsed.blackDefaultTab, parsed.blackPostMove,
+        parsed.myUser, parsed.myRating, parsed.myCountry, parsed.myMembership, parsed.myDefaultTab, parsed.myPostMove,
+        parsed.oppUser, parsed.oppRating, parsed.oppCountry, parsed.oppMembership, parsed.oppDefaultTab, parsed.oppPostMove,
         parsed.ecoCode, parsed.pgnDate, parsed.pgnTime, parsed.baseTime1, parsed.timeIncrement1,
         JSON.stringify(json), new Date()
       ]);
     } else if (code === 404) {
-      outRows.push([b2.url, b2.type, b2.id, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '{"error":404}', new Date()]);
+      var total = CONFIG && CONFIG.HEADERS && CONFIG.HEADERS.CallbackStats ? CONFIG.HEADERS.CallbackStats.length : 0;
+      var row = [b2.url, b2.type, b2.id];
+      while (row.length < Math.max(0, total - 2)) row.push('');
+      row.push('{"error":404}');
+      row.push(new Date());
+      outRows.push(row);
     } else {
       var endpoint2 = b2.type === 'daily' ? ('https://www.chess.com/callback/daily/game/' + b2.id) : ('https://www.chess.com/callback/live/game/' + b2.id);
       logEvent('WARN', 'CALLBACK_HTTP', 'Non-2xx from callback', {url: endpoint2, code: code});
@@ -194,29 +201,56 @@ function parseCallbackIdentity(json, b) {
     oppPre = (bottom && bottom.color === 'white') ? bottom.rating : (top && top.color === 'white' ? top.rating : (pgn.WhiteElo || ''));
   }
 
+  function pickForColor(color, prop, fallback) {
+    try {
+      var fromTop = (players && players.top && players.top.color === color) ? players.top[prop] : '';
+      var fromBottom = (players && players.bottom && players.bottom.color === color) ? players.bottom[prop] : '';
+      var val = (fromTop !== '' && fromTop !== undefined && fromTop !== null) ? fromTop : ((fromBottom !== '' && fromBottom !== undefined && fromBottom !== null) ? fromBottom : '');
+      return (val === '' || val === undefined || val === null) ? (fallback || '') : val;
+    } catch (e) {
+      return fallback || '';
+    }
+  }
+
+  var oppColor = (myColor === 'white') ? 'black' : (myColor === 'black' ? 'white' : '');
+  var myUser = (myColor === 'white') ? whiteUser : ((myColor === 'black') ? blackUser : '');
+  var oppUser = (oppColor === 'white') ? whiteUser : ((oppColor === 'black') ? blackUser : '');
+  var myRatingVal = (myColor === 'white') ? (pgn.WhiteElo || '') : ((myColor === 'black') ? (pgn.BlackElo || '') : '');
+  var oppRatingVal = (oppColor === 'white') ? (pgn.WhiteElo || '') : ((oppColor === 'black') ? (pgn.BlackElo || '') : '');
+  var myRating2 = (myColor ? pickForColor(myColor, 'rating', myRatingVal) : '');
+  var oppRating2 = (oppColor ? pickForColor(oppColor, 'rating', oppRatingVal) : '');
+  var myCountry = (myColor ? pickForColor(myColor, 'countryName', '') : '');
+  var oppCountry = (oppColor ? pickForColor(oppColor, 'countryName', '') : '');
+  var myMembership = (myColor ? pickForColor(myColor, 'membershipCode', '') : '');
+  var oppMembership = (oppColor ? pickForColor(oppColor, 'membershipCode', '') : '');
+  var myDefaultTab = (myColor ? pickForColor(myColor, 'defaultTab', '') : '');
+  var oppDefaultTab = (oppColor ? pickForColor(oppColor, 'defaultTab', '') : '');
+  var myPostMove = (myColor ? pickForColor(myColor, 'postMoveAction', '') : '');
+  var oppPostMove = (oppColor ? pickForColor(oppColor, 'postMoveAction', '') : '');
+
   return {
     myColor: myColor,
     myExactChange: (myExact === '' || myExact === null || myExact === undefined) ? '' : Number(myExact),
     myPregameRating: (myPre === '' || myPre === null || myPre === undefined) ? '' : Number(myPre),
-    oppColor: (myColor === 'white') ? 'black' : (myColor === 'black' ? 'white' : ''),
+    oppColor: oppColor,
     oppPregameRating: (oppPre === '' || oppPre === null || oppPre === undefined) ? '' : Number(oppPre),
     oppExactChange: (oppExact === '' || oppExact === null || oppExact === undefined) ? '' : Number(oppExact),
     gameEndReason: endReason,
     isLive: isLive,
     isRated: isRated,
     plyCount: ply,
-    whiteUser: whiteUser,
-    whiteRating: (players && players.top && players.top.color === 'white') ? players.top.rating : ((players && players.bottom && players.bottom.color === 'white') ? players.bottom.rating : (pgn.WhiteElo || '')),
-    whiteCountry: (players && players.top && players.top.color === 'white') ? (players.top.countryName || '') : ((players && players.bottom && players.bottom.color === 'white') ? (players.bottom.countryName || '') : ''),
-    whiteMembership: (players && players.top && players.top.color === 'white') ? (players.top.membershipCode || '') : ((players && players.bottom && players.bottom.color === 'white') ? (players.bottom.membershipCode || '') : ''),
-    whiteDefaultTab: (players && players.top && players.top.color === 'white') ? (players.top.defaultTab || '') : ((players && players.bottom && players.bottom.color === 'white') ? (players.bottom.defaultTab || '') : ''),
-    whitePostMove: (players && players.top && players.top.color === 'white') ? (players.top.postMoveAction || '') : ((players && players.bottom && players.bottom.color === 'white') ? (players.bottom.postMoveAction || '') : ''),
-    blackUser: blackUser,
-    blackRating: (players && players.top && players.top.color === 'black') ? players.top.rating : ((players && players.bottom && players.bottom.color === 'black') ? players.bottom.rating : (pgn.BlackElo || '')),
-    blackCountry: (players && players.top && players.top.color === 'black') ? (players.top.countryName || '') : ((players && players.bottom && players.bottom.color === 'black') ? (players.bottom.countryName || '') : ''),
-    blackMembership: (players && players.top && players.top.color === 'black') ? (players.top.membershipCode || '') : ((players && players.bottom && players.bottom.color === 'black') ? (players.bottom.membershipCode || '') : ''),
-    blackDefaultTab: (players && players.top && players.top.color === 'black') ? (players.top.defaultTab || '') : ((players && players.bottom && players.bottom.color === 'black') ? (players.bottom.defaultTab || '') : ''),
-    blackPostMove: (players && players.top && players.top.color === 'black') ? (players.top.postMoveAction || '') : ((players && players.bottom && players.bottom.color === 'black') ? (players.bottom.postMoveAction || '') : ''),
+    myUser: myUser,
+    myRating: myRating2,
+    myCountry: myCountry,
+    myMembership: myMembership,
+    myDefaultTab: myDefaultTab,
+    myPostMove: myPostMove,
+    oppUser: oppUser,
+    oppRating: oppRating2,
+    oppCountry: oppCountry,
+    oppMembership: oppMembership,
+    oppDefaultTab: oppDefaultTab,
+    oppPostMove: oppPostMove,
     ecoCode: ecoCode,
     pgnDate: pgnDate,
     pgnTime: pgnTime,
@@ -258,5 +292,30 @@ function deriveExactRatingChange(cb) {
     return { change: change, pregame: pre };
   } catch (e) {
     return { change: '', pregame: '' };
+  }
+}
+
+function upgradeCallbackStatsHeaderIfNeeded(sheet) {
+  try {
+    if (!sheet) return;
+    var lastCol = sheet.getLastColumn();
+    if (lastCol < 1) return;
+    var header = sheet.getRange(1, 1, 1, lastCol).getValues()[0] || [];
+    // Detect old schema by presence of 'white_username' column name
+    var hasOld = false;
+    for (var i = 0; i < header.length; i++) {
+      if (String(header[i]).trim() === 'white_username') { hasOld = true; break; }
+    }
+    if (!hasOld) return;
+    // Overwrite entire header row with new schema
+    var newHeader = CONFIG && CONFIG.HEADERS && CONFIG.HEADERS.CallbackStats ? CONFIG.HEADERS.CallbackStats : null;
+    if (!newHeader || !newHeader.length) return;
+    sheet.getRange(1, 1, 1, newHeader.length).setValues([newHeader]);
+    // If old sheet had more columns than new, clear the extras to avoid mismatches
+    if (lastCol > newHeader.length) {
+      sheet.getRange(1, newHeader.length + 1, 1, lastCol - newHeader.length).clearContent();
+    }
+  } catch (e) {
+    // best-effort; ignore
   }
 }

@@ -67,8 +67,8 @@ const CONFIG = {
       'opp_lastgame_rating_change', 'opp_lastgame_pregame_rating',
       'opp_method_used', 'opp_rating_change_applied', 'opp_pregame_rating_applied',
       'game_end_reason', 'is_live_game', 'is_rated', 'ply_count',
-      'white_username', 'white_rating', 'white_country', 'white_membership', 'white_default_tab', 'white_post_move_action',
-      'black_username', 'black_rating', 'black_country', 'black_membership', 'black_default_tab', 'black_post_move_action',
+      'my_username', 'my_rating', 'my_country', 'my_membership', 'my_default_tab', 'my_post_move_action',
+      'opp_username', 'opp_rating', 'opp_country', 'opp_membership', 'opp_default_tab', 'opp_post_move_action',
       'eco_code', 'pgn_date', 'pgn_time', 'base_time1', 'time_increment1',
       'data_json', 'fetched_at'
     ],
