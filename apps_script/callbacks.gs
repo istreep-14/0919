@@ -52,13 +52,26 @@ function runCallbacksBatch() {
       var appliedChange = useCb ? Number(cbChange) : (lgChange !== '' ? Number(lgChange) : '');
       var appliedPre = (cbPre !== '' ? Number(cbPre) : (lgPre !== '' ? Number(lgPre) : ''));
 
+      // Opponent unified values
+      var oppCbChange = (parsed.oppExactChange === '' || parsed.oppExactChange === null || parsed.oppExactChange === undefined) ? '' : Number(parsed.oppExactChange);
+      var oppCbPre = (parsed.oppPregameRating === '' || parsed.oppPregameRating === null || parsed.oppPregameRating === undefined) ? '' : Number(parsed.oppPregameRating);
+      var oppLgChange = (appliedChange === '' ? '' : -Number(appliedChange)); // negative of mine for lastgame
+      var oppLgPre = (appliedPre === '' ? '' : ''); // unknown from lastgame; leave blank
+      var oppUseCb = (oppCbChange !== '' && Number(oppCbChange) !== 0);
+      var oppMethod = oppUseCb ? 'callback' : (oppLgChange !== '' ? 'lastgame' : '');
+      var oppAppliedChange = oppUseCb ? Number(oppCbChange) : (oppLgChange !== '' ? Number(oppLgChange) : '');
+      var oppAppliedPre = (oppCbPre !== '' ? Number(oppCbPre) : (oppLgPre !== '' ? Number(oppLgPre) : ''));
+
       outRows.push([
         b2.url, b2.type, b2.id,
         parsed.myColor,
         cbChange, cbPre,
         lgChange, lgPre,
         method, appliedChange, appliedPre,
-        parsed.oppColor, parsed.oppPregameRating, parsed.oppExactChange,
+        parsed.oppColor,
+        oppCbChange, oppCbPre,
+        oppLgChange, oppLgPre,
+        oppMethod, oppAppliedChange, oppAppliedPre,
         parsed.gameEndReason, parsed.isLive, parsed.isRated, parsed.plyCount,
         parsed.whiteUser, parsed.whiteRating, parsed.whiteCountry, parsed.whiteMembership, parsed.whiteDefaultTab, parsed.whitePostMove,
         parsed.blackUser, parsed.blackRating, parsed.blackCountry, parsed.blackMembership, parsed.blackDefaultTab, parsed.blackPostMove,
