@@ -1,6 +1,15 @@
 ### Data Model
 
-All data lives in two spreadsheets: Games (raw normalized games) and Metrics (meta/aggregates/logs). Column orders are stable and versioned via schema_version in Archives.
+All data lives across multiple spreadsheets for clarity and performance:
+- Games (raw normalized games)
+- Archives (per-month operational metadata)
+- DailyTotals (aggregated per date+format)
+- Callbacks (CallbackStats raw JSON and derived fields)
+- Ratings (Ratings timeline and Adjustments)
+- Stats (PlayerStats snapshots)
+- LiveStats (LiveStatsEOD and LiveStatsMeta)
+- Logs (structured events)
+Column orders are stable and versioned via schema_version in Archives.
 
 ### Sheet: Games (canonical per-game rows)
 Columns (order is canonical):

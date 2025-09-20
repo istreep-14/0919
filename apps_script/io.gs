@@ -165,10 +165,6 @@ function ensureFileInProjectFolder(fileId) {
 }
 
 // Legacy compatibility for older "Metrics" API
-function getSpreadsheetNameMetrics() {
-  return getSpreadsheetNameLogs();
-}
-
-function getOrCreateMetricsSpreadsheet() {
-  return getOrCreateLogsSpreadsheet();
-}
+// Deprecated: legacy "Metrics" alias kept for backward compatibility
+function getSpreadsheetNameMetrics() { return getSpreadsheetNameLogs(); }
+function getOrCreateMetricsSpreadsheet() { return getOrCreateLogsSpreadsheet(); }
