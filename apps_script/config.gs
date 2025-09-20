@@ -58,7 +58,7 @@ const CONFIG = {
       'start_time', 'end_time', 'duration_seconds',
       'rated', 'time_class', 'rules', 'format',
       'player_username', 'player_color', 'player_rating', 'player_result', 'player_outcome', 'player_score',
-      'opponent_username', 'opponent_color', 'opponent_rating',
+      'opponent_username', 'opponent_color', 'opponent_rating', 'opponent_result', 'opponent_outcome', 'opponent_score',
       'eco_code', 'eco_url', 'uuid', 'end_reason', 'pgn_moves'
     ],
     DailyTotals: [
