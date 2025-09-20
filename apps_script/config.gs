@@ -65,7 +65,9 @@ const CONFIG = {
     ],
     CallbackStats: [
       'url', 'type', 'id', 'my_color',
-      'my_rating', 'my_delta_callback', 'opp_delta_callback',
+      'my_username', 'my_rating', 'my_country', 'my_membership', 'my_default_tab', 'my_post_move_action',
+      'opp_username', 'opp_rating', 'opp_country', 'opp_membership', 'opp_default_tab', 'opp_post_move_action',
+      'my_delta_callback', 'opp_delta_callback',
       'data_json', 'fetched_at'
     ],
     Ratings: [

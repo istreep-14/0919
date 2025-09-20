@@ -50,7 +50,9 @@ function runCallbacksBatch() {
       outRows.push([
         b2.url, b2.type, b2.id,
         parsed.myColor,
-        parsed.myRating, cbChange, oppCbChange,
+        parsed.myUser, parsed.myRating, parsed.myCountry, parsed.myMembership, parsed.myDefaultTab, parsed.myPostMove,
+        parsed.oppUser, parsed.oppRating, parsed.oppCountry, parsed.oppMembership, parsed.oppDefaultTab, parsed.oppPostMove,
+        cbChange, oppCbChange,
         JSON.stringify(json), new Date()
       ]);
     } else if (code === 404) {
@@ -188,18 +190,22 @@ function parseCallbackIdentity(json, b) {
   var oppColor = (myColor === 'white') ? 'black' : (myColor === 'black' ? 'white' : '');
   var myUser = (myColor === 'white') ? whiteUser : ((myColor === 'black') ? blackUser : '');
   var oppUser = (oppColor === 'white') ? whiteUser : ((oppColor === 'black') ? blackUser : '');
-  var myRatingVal = (myColor === 'white') ? (pgn.WhiteElo || '') : ((myColor === 'black') ? (pgn.BlackElo || '') : '');
-  var oppRatingVal = (oppColor === 'white') ? (pgn.WhiteElo || '') : ((oppColor === 'black') ? (pgn.BlackElo || '') : '');
-  var myRating2 = (myColor ? pickForColor(myColor, 'rating', myRatingVal) : '');
-  var oppRating2 = (oppColor ? pickForColor(oppColor, 'rating', oppRatingVal) : '');
-  var myCountry = (myColor ? pickForColor(myColor, 'countryName', '') : '');
-  var oppCountry = (oppColor ? pickForColor(oppColor, 'countryName', '') : '');
-  var myMembership = (myColor ? pickForColor(myColor, 'membershipCode', '') : '');
-  var oppMembership = (oppColor ? pickForColor(oppColor, 'membershipCode', '') : '');
-  var myDefaultTab = (myColor ? pickForColor(myColor, 'defaultTab', '') : '');
-  var oppDefaultTab = (oppColor ? pickForColor(oppColor, 'defaultTab', '') : '');
-  var myPostMove = (myColor ? pickForColor(myColor, 'postMoveAction', '') : '');
-  var oppPostMove = (oppColor ? pickForColor(oppColor, 'postMoveAction', '') : '');
+  // Choose the player blocks for white/black once, then pull properties consistently
+  var whiteBlock = (players && players.top && players.top.color === 'white') ? players.top : ((players && players.bottom && players.bottom.color === 'white') ? players.bottom : {});
+  var blackBlock = (players && players.top && players.top.color === 'black') ? players.top : ((players && players.bottom && players.bottom.color === 'black') ? players.bottom : {});
+  function from(block, key, fallback) { var v = block && block[key]; return (v === undefined || v === null || v === '') ? (fallback || '') : v; }
+  var myBlock = (myColor === 'white') ? whiteBlock : ((myColor === 'black') ? blackBlock : {});
+  var oppBlock = (oppColor === 'white') ? whiteBlock : ((oppColor === 'black') ? blackBlock : {});
+  var myRating2 = from(myBlock, 'rating', (myColor === 'white') ? (pgn.WhiteElo || '') : ((myColor === 'black') ? (pgn.BlackElo || '') : ''));
+  var oppRating2 = from(oppBlock, 'rating', (oppColor === 'white') ? (pgn.WhiteElo || '') : ((oppColor === 'black') ? (pgn.BlackElo || '') : ''));
+  var myCountry = from(myBlock, 'countryName', '');
+  var oppCountry = from(oppBlock, 'countryName', '');
+  var myMembership = from(myBlock, 'membershipCode', '');
+  var oppMembership = from(oppBlock, 'membershipCode', '');
+  var myDefaultTab = from(myBlock, 'defaultTab', '');
+  var oppDefaultTab = from(oppBlock, 'defaultTab', '');
+  var myPostMove = from(myBlock, 'postMoveAction', '');
+  var oppPostMove = from(oppBlock, 'postMoveAction', '');
 
   return {
     myColor: myColor,
