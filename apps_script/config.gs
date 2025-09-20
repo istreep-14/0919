@@ -58,7 +58,10 @@ const CONFIG = {
     ],
     CallbackStats: [
       'url', 'type', 'id',
-      'my_color', 'my_exact_rating_change', 'my_pregame_rating',
+      'my_color',
+      'callback_rating_change', 'callback_pregame_rating',
+      'lastgame_rating_change', 'lastgame_pregame_rating',
+      'method_used', 'rating_change_applied', 'pregame_rating_applied',
       'opp_color', 'opp_pregame_rating', 'opp_exact_rating_change',
       'game_end_reason', 'is_live_game', 'is_rated', 'ply_count',
       'white_username', 'white_rating', 'white_country', 'white_membership', 'white_default_tab', 'white_post_move_action',

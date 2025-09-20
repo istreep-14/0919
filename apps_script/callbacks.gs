@@ -7,6 +7,9 @@ function runCallbacksBatch() {
   if (lastRow < 2) return;
   var values = games.getRange(2, 1, lastRow - 1, games.getLastColumn()).getValues();
 
+  // Precompute last-game method map (url -> { change, pregame })
+  var lastIndex = buildLastMethodIndexFromGames(values);
+
   // Build a small batch of candidates not yet in CallbackStats
   var existing = buildCallbackUrlIndex(cb);
   var batch = [];
@@ -20,41 +23,56 @@ function runCallbacksBatch() {
   }
   if (!batch.length) return;
 
-  // Fetch each callback (serial is fine; could batch with fetchAll to speed up)
-  var outRows = [];
+  // Parallel fetch callbacks
+  var reqs = [];
   for (var j = 0; j < batch.length; j++) {
     var b = batch[j];
     var endpoint = b.type === 'daily' ? ('https://www.chess.com/callback/daily/game/' + b.id) : ('https://www.chess.com/callback/live/game/' + b.id);
-    try {
-      var resp = UrlFetchApp.fetch(endpoint, { muteHttpExceptions: true, headers: { 'User-Agent': 'ChessSheets/1.0 (AppsScript)' }});
-      var code = resp.getResponseCode();
-      if (code >= 200 && code < 300) {
-        var json = JSON.parse(resp.getContentText());
-        var parsed = parseCallbackIdentity(json, b);
-        outRows.push([
-          b.url, b.type, b.id,
-          parsed.myColor, parsed.myExactChange, parsed.myPregameRating,
-          parsed.oppColor, parsed.oppPregameRating, parsed.oppExactChange,
-          parsed.gameEndReason, parsed.isLive, parsed.isRated, parsed.plyCount,
-          parsed.whiteUser, parsed.whiteRating, parsed.whiteCountry, parsed.whiteMembership, parsed.whiteDefaultTab, parsed.whitePostMove,
-          parsed.blackUser, parsed.blackRating, parsed.blackCountry, parsed.blackMembership, parsed.blackDefaultTab, parsed.blackPostMove,
-          parsed.ecoCode, parsed.pgnDate, parsed.pgnTime, parsed.baseTime1, parsed.timeIncrement1,
-          JSON.stringify(json), new Date()
-        ]);
-      } else if (code === 404) {
-        // record as not found to avoid retries soon
-        outRows.push([b.url, b.type, b.id, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '{"error":404}', new Date()]);
-      } else {
-        logEvent('WARN', 'CALLBACK_HTTP', 'Non-2xx from callback', {url: endpoint, code: code});
-      }
-    } catch (e) {
-      logEvent('ERROR', 'CALLBACK_FETCH', 'Exception fetching callback', {url: endpoint, error: String(e)});
+    reqs.push({ url: endpoint, method: 'get', muteHttpExceptions: true, followRedirects: true, headers: { 'User-Agent': 'ChessSheets/1.0 (AppsScript)' } });
+  }
+  var responses = UrlFetchApp.fetchAll(reqs);
+
+  var outRows = [];
+  for (var k = 0; k < responses.length; k++) {
+    var b2 = batch[k];
+    var resp = responses[k];
+    var code = 0;
+    try { code = resp.getResponseCode(); } catch (e) { code = 0; }
+    if (code >= 200 && code < 300) {
+      var json = {};
+      try { json = JSON.parse(resp.getContentText() || '{}'); } catch (e) { json = {}; }
+      var parsed = parseCallbackIdentity(json, b2);
+      var lg = lastIndex[b2.url] || { change: '', pregame: '' };
+      var cbChange = (parsed.myExactChange === '' || parsed.myExactChange === null || parsed.myExactChange === undefined) ? '' : Number(parsed.myExactChange);
+      var cbPre = (parsed.myPregameRating === '' || parsed.myPregameRating === null || parsed.myPregameRating === undefined) ? '' : Number(parsed.myPregameRating);
+      var lgChange = (lg.change === '' || lg.change === null || lg.change === undefined) ? '' : Number(lg.change);
+      var lgPre = (lg.pregame === '' || lg.pregame === null || lg.pregame === undefined) ? '' : Number(lg.pregame);
+      var useCb = (cbChange !== '' && Number(cbChange) !== 0);
+      var method = useCb ? 'callback' : (lgChange !== '' ? 'lastgame' : '');
+      var appliedChange = useCb ? Number(cbChange) : (lgChange !== '' ? Number(lgChange) : '');
+      var appliedPre = (cbPre !== '' ? Number(cbPre) : (lgPre !== '' ? Number(lgPre) : ''));
+
+      outRows.push([
+        b2.url, b2.type, b2.id,
+        parsed.myColor,
+        cbChange, cbPre,
+        lgChange, lgPre,
+        method, appliedChange, appliedPre,
+        parsed.oppColor, parsed.oppPregameRating, parsed.oppExactChange,
+        parsed.gameEndReason, parsed.isLive, parsed.isRated, parsed.plyCount,
+        parsed.whiteUser, parsed.whiteRating, parsed.whiteCountry, parsed.whiteMembership, parsed.whiteDefaultTab, parsed.whitePostMove,
+        parsed.blackUser, parsed.blackRating, parsed.blackCountry, parsed.blackMembership, parsed.blackDefaultTab, parsed.blackPostMove,
+        parsed.ecoCode, parsed.pgnDate, parsed.pgnTime, parsed.baseTime1, parsed.timeIncrement1,
+        JSON.stringify(json), new Date()
+      ]);
+    } else if (code === 404) {
+      outRows.push([b2.url, b2.type, b2.id, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '{"error":404}', new Date()]);
+    } else {
+      var endpoint2 = b2.type === 'daily' ? ('https://www.chess.com/callback/daily/game/' + b2.id) : ('https://www.chess.com/callback/live/game/' + b2.id);
+      logEvent('WARN', 'CALLBACK_HTTP', 'Non-2xx from callback', {url: endpoint2, code: code});
     }
   }
   if (outRows.length) writeRowsChunked(cb, outRows);
-
-  // Update exact rating change in Games and propagate to daily totals
-  if (outRows.length) applyExactChangesToGames(gamesSS, metricsSS, outRows);
 }
 
 function buildCallbackUrlIndex(cbSheet) {
@@ -174,66 +192,7 @@ function parseCallbackIdentity(json, b) {
   };
 }
 
-function applyExactChangesToGames(gamesSS, metricsSS, outRows) {
-  var games = getOrCreateSheet(gamesSS, CONFIG.SHEET_NAMES.Games, CONFIG.HEADERS.Games);
-  var lastRow = games.getLastRow();
-  if (lastRow < 2) return;
-  var urls = games.getRange(2, 1, lastRow - 1, games.getLastColumn()).getValues();
-  var urlIdx = {};
-  for (var i = 0; i < urls.length; i++) {
-    var u = urls[i][0];
-    if (u) urlIdx[u] = { rowNum: 2 + i, rowVals: urls[i] };
-  }
-  var idxPlayerColor = CONFIG.HEADERS.Games.indexOf('player_color');
-  var idxEndTime = CONFIG.HEADERS.Games.indexOf('end_time');
-  var idxExact = CONFIG.HEADERS.Games.indexOf('rating_change_exact');
-  var idxExactFlag = CONFIG.HEADERS.Games.indexOf('rating_is_exact');
-  var idxExactPregame = CONFIG.HEADERS.Games.indexOf('exact_pregame_rating');
-
-  var dateSet = {};
-  for (var j = 0; j < outRows.length; j++) {
-    var url = outRows[j][0];
-    var myColor = outRows[j][3];
-    var myExactChange = outRows[j][4];
-    var myPregame = outRows[j][5];
-    var rawJson = outRows[j][28]; // data_json
-    if (!url || !rawJson) continue;
-    var entry = urlIdx[url];
-    if (!entry) continue;
-    var playerColor = entry.rowVals[idxPlayerColor];
-    var exactForPlayer = '';
-    try {
-      if (myExactChange !== '' && myExactChange !== null && myExactChange !== undefined) {
-        // Prefer parsed exact change from callback row (already per my color)
-        exactForPlayer = Number(myExactChange);
-      } else {
-        var obj = JSON.parse(rawJson);
-        if (obj && obj.game) {
-          if (playerColor === 'white') exactForPlayer = (obj.game.ratingChangeWhite !== undefined) ? obj.game.ratingChangeWhite : obj.game.ratingChange;
-          else if (playerColor === 'black') exactForPlayer = (obj.game.ratingChangeBlack !== undefined) ? obj.game.ratingChangeBlack : (obj.game.ratingChange ? -obj.game.ratingChange : '');
-        }
-      }
-    } catch (e) {}
-    if (exactForPlayer === '' || exactForPlayer === null || exactForPlayer === undefined) continue;
-    games.getRange(entry.rowNum, idxExact + 1).setValue(Number(exactForPlayer));
-    games.getRange(entry.rowNum, idxExactFlag + 1).setValue(true);
-    // Set exact pregame rating if available
-    if (idxExactPregame >= 0 && myPregame !== '' && myPregame !== null && myPregame !== undefined) {
-      games.getRange(entry.rowNum, idxExactPregame + 1).setValue(Number(myPregame));
-    }
-    var d = entry.rowVals[idxEndTime];
-    if (d) {
-      var dateKey = Utilities.formatDate(new Date(d), getProjectTimeZone(), 'yyyy-MM-dd');
-      dateSet[dateKey] = true;
-    }
-    // Logging for diagnostics
-    try { logInfo('CALLBACK_APPLY', 'Exact rating applied', { url: url, row: entry.rowNum, exact: exactForPlayer, pregame: myPregame }); } catch (e) {}
-  }
-  var dates = Object.keys(dateSet);
-  if (dates.length) recomputeDailyForDates(dates);
-  // Also recompute last_rating/rating_change_last accurately by timestamp within format
-  try { backfillLastRatings(); } catch (e) {}
-}
+// Disabled writing back to Games; we only record unified values in CallbackStats now.
 
 // removed duplicate runCallbacksBatch implementation
 
